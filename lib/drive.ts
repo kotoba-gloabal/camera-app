@@ -245,6 +245,16 @@ export async function getProductThumbnailFileIds(
   return new Map(results);
 }
 
+/** 商品IDの Drive フォルダ内の全画像 fileId を返す。失敗時は空配列 */
+export async function getProductImageFileIds(productId: string): Promise<string[]> {
+  try {
+    const result = await findProductDriveImages(productId);
+    return result.images.map((image) => image.id);
+  } catch {
+    return [];
+  }
+}
+
 /**
  * 商品IDから Drive 上の商品フォルダを辿り、画像ファイルのメタデータのみ返す。
  */

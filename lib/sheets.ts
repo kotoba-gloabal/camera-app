@@ -211,3 +211,49 @@ export async function readProductListForCountry(country: string): Promise<Produc
 
   return items;
 }
+
+/**
+ * 「製品リスト」から指定IDの1商品を、指定国向け価格列（G/H/I）だけ返す。
+ */
+export async function readProductByIdForCountry(
+  country: string,
+  productId: string
+): Promise<ProductListItemPublic | null> {
+  const mapping = COUNTRY_PRODUCT_PRICE_COLUMN[country];
+  if (!mapping) {
+    throw new Error("Unsupported country for product list");
+  }
+
+  const spreadsheetId = process.env.GOOGLE_SHEET_ID;
+  if (!spreadsheetId) {
+    throw new Error("GOOGLE_SHEET_ID is not set");
+  }
+
+  const sheets = createSheetsClient();
+  const range = `'${PRODUCT_SHEET_NAME.replace(/'/g, "''")}'!${PRODUCT_LIST_DATA_RANGE}`;
+
+  const res = await sheets.spreadsheets.values.get({
+    spreadsheetId,
+    range,
+  });
+
+  const values = (res.data.values ?? []) as Cell[][];
+  const targetId = productId.trim();
+
+  for (let i = 1; i < values.length; i++) {
+    const row = values[i];
+    if (!row) continue;
+
+    const id = cellString(row[0]);
+    if (id !== targetId) continue;
+
+    return {
+      id,
+      name: cellString(row[1]),
+      price: cellString(row[mapping.colIndex] ?? ""),
+      currency: mapping.currency,
+    };
+  }
+
+  return null;
+}

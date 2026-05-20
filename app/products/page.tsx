@@ -124,6 +124,7 @@ export default function ProductsPage() {
                     <th className="border-b border-neutral-200 px-3 py-2 font-medium">製品名</th>
                     <th className="border-b border-neutral-200 px-3 py-2 font-medium">価格</th>
                     <th className="border-b border-neutral-200 px-3 py-2 font-medium">通貨</th>
+                    <th className="border-b border-neutral-200 px-3 py-2 font-medium">詳細</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -148,6 +149,14 @@ export default function ProductsPage() {
                       <td className="px-3 py-2 align-top">{p.name}</td>
                       <td className="px-3 py-2 align-top">{p.price}</td>
                       <td className="px-3 py-2 align-top">{p.currency}</td>
+                      <td className="px-3 py-2 align-top">
+                        <Link
+                          href={`/products/${encodeURIComponent(p.id)}`}
+                          className="text-blue-600 underline"
+                        >
+                          詳細
+                        </Link>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
