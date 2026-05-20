@@ -2,6 +2,7 @@ import { createSheetsClient } from "@/lib/google";
 
 const PRODUCT_SHEET_NAME = "製品リスト";
 const TEST_RANGE = "A1:J5";
+const PRODUCT_LIST_DATA_RANGE = "A:I";
 
 const WHOLESALER_SHEET_NAME = "卸先リスト";
 const WHOLESALER_TEST_RANGE = "A1:E20";
@@ -145,4 +146,68 @@ export async function findWholesalerSessionPayload(
   }
 
   return null;
+}
+
+const COUNTRY_PRODUCT_PRICE_COLUMN: Record<
+  string,
+  { colIndex: number; currency: "HKD" | "CNY" | "THB" }
+> = {
+  香港: { colIndex: 6, currency: "HKD" },
+  中国: { colIndex: 7, currency: "CNY" },
+  タイ: { colIndex: 8, currency: "THB" },
+};
+
+/** API 返却用（原価・他国価格は含めない） */
+export type ProductListItemPublic = {
+  id: string;
+  name: string;
+  price: string;
+  currency: "HKD" | "CNY" | "THB";
+};
+
+/**
+ * 「製品リスト」を読み、指定国向けの価格列（G/H/I）だけを返す。1行目はヘッダーとしてスキップ。
+ * C〜F列（原価・他地域の日本円価格など）はレスポンスに含めない。
+ */
+export async function readProductListForCountry(country: string): Promise<ProductListItemPublic[]> {
+  const mapping = COUNTRY_PRODUCT_PRICE_COLUMN[country];
+  if (!mapping) {
+    throw new Error("Unsupported country for product list");
+  }
+
+  const spreadsheetId = process.env.GOOGLE_SHEET_ID;
+  if (!spreadsheetId) {
+    throw new Error("GOOGLE_SHEET_ID is not set");
+  }
+
+  const sheets = createSheetsClient();
+  const range = `'${PRODUCT_SHEET_NAME.replace(/'/g, "''")}'!${PRODUCT_LIST_DATA_RANGE}`;
+
+  const res = await sheets.spreadsheets.values.get({
+    spreadsheetId,
+    range,
+  });
+
+  const values = (res.data.values ?? []) as Cell[][];
+  const items: ProductListItemPublic[] = [];
+
+  for (let i = 1; i < values.length; i++) {
+    const row = values[i];
+    if (!row) continue;
+
+    const id = cellString(row[0]);
+    if (!id) continue;
+
+    const name = cellString(row[1]);
+    const price = cellString(row[mapping.colIndex] ?? "");
+
+    items.push({
+      id,
+      name,
+      price,
+      currency: mapping.currency,
+    });
+  }
+
+  return items;
 }

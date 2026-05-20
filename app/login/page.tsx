@@ -1,27 +1,19 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-type MeUser = {
-  country: string;
-  companyName: string;
-  contactName: string;
-};
-
 export default function LoginPage() {
+  const router = useRouter();
   const [loginId, setLoginId] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState(false);
-  const [user, setUser] = useState<MeUser | null>(null);
   const [pending, setPending] = useState(false);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError("");
-    setUser(null);
-    setSuccess(false);
     setPending(true);
     try {
       const res = await fetch("/api/login", {
@@ -36,12 +28,7 @@ export default function LoginPage() {
         return;
       }
       setLoginId("");
-      setSuccess(true);
-      const meRes = await fetch("/api/me");
-      const meData: { ok?: boolean; user?: MeUser | null } = await meRes.json();
-      if (meData.ok && meData.user) {
-        setUser(meData.user);
-      }
+      router.push("/products");
     } catch {
       setError("通信に失敗しました");
     } finally {
@@ -88,14 +75,11 @@ export default function LoginPage() {
         </button>
       </form>
       {error ? <p className="text-red-600">{error}</p> : null}
-      {success ? <p className="text-green-700">ログイン成功</p> : null}
-      {user ? (
-        <section className="rounded border border-neutral-200 p-3 text-sm">
-          <p>国: {user.country}</p>
-          <p>社名: {user.companyName}</p>
-          <p>担当者: {user.contactName}</p>
-        </section>
-      ) : null}
+      <p>
+        <Link href="/products" className="text-blue-600 underline">
+          商品一覧へ（要ログイン）
+        </Link>
+      </p>
       <p>
         <Link href="/" className="text-blue-600 underline">
           トップへ
