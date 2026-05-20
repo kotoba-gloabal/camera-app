@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
+const PAGE_SIZE = 20;
+
 type MeUser = {
   country: string;
   companyName: string;
@@ -17,17 +19,30 @@ type ProductRow = {
   thumbnailFileId: string | null;
 };
 
+type Pagination = {
+  page: number;
+  pageSize: number;
+  totalItems: number;
+  totalPages: number;
+  hasPrev: boolean;
+  hasNext: boolean;
+};
+
 type ProductsResponse =
-  | { ok: true; user: MeUser; products: ProductRow[] }
+  | { ok: true; user: MeUser; pagination: Pagination; products: ProductRow[] }
   | { ok: false; error: string };
 
 export default function ProductsPage() {
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [unauthorized, setUnauthorized] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [data, setData] = useState<{ ok: true; user: MeUser; products: ProductRow[] } | null>(
-    null
-  );
+  const [data, setData] = useState<{
+    ok: true;
+    user: MeUser;
+    pagination: Pagination;
+    products: ProductRow[];
+  } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -37,7 +52,11 @@ export default function ProductsPage() {
       setError(null);
       setData(null);
       try {
-        const res = await fetch("/api/products");
+        const params = new URLSearchParams({
+          page: String(page),
+          pageSize: String(PAGE_SIZE),
+        });
+        const res = await fetch(`/api/products?${params.toString()}`);
         const json = (await res.json()) as ProductsResponse;
         if (cancelled) return;
         if (res.status === 401 || (!json.ok && json.error === "Unauthorized")) {
@@ -58,7 +77,7 @@ export default function ProductsPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [page]);
 
   return (
     <div className="min-h-screen bg-white text-neutral-900">
@@ -88,7 +107,11 @@ export default function ProductsPage() {
                 <span className="font-medium">社名:</span> {data.user.companyName}
               </p>
               <p>
-                <span className="font-medium">商品件数:</span> {data.products.length}
+                <span className="font-medium">総商品件数:</span> {data.pagination.totalItems}
+              </p>
+              <p>
+                <span className="font-medium">ページ:</span> {data.pagination.page} /{" "}
+                {data.pagination.totalPages}
               </p>
             </section>
 
@@ -129,6 +152,29 @@ export default function ProductsPage() {
                   ))}
                 </tbody>
               </table>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                className="rounded border border-neutral-300 px-3 py-1.5 text-sm disabled:cursor-not-allowed disabled:opacity-40"
+                disabled={!data.pagination.hasPrev || loading}
+                onClick={() => setPage((current) => Math.max(1, current - 1))}
+              >
+                前へ
+              </button>
+              <button
+                type="button"
+                className="rounded border border-neutral-300 px-3 py-1.5 text-sm disabled:cursor-not-allowed disabled:opacity-40"
+                disabled={!data.pagination.hasNext || loading}
+                onClick={() => setPage((current) => current + 1)}
+              >
+                次へ
+              </button>
+              <span className="text-sm text-neutral-600">
+                {data.pagination.page} / {data.pagination.totalPages} ページ（全{" "}
+                {data.pagination.totalItems} 件）
+              </span>
             </div>
           </div>
         ) : null}

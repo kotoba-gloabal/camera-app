@@ -6,6 +6,26 @@ import { readProductListForCountry } from "@/lib/sheets";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+const DEFAULT_PAGE = 1;
+const DEFAULT_PAGE_SIZE = 20;
+const MAX_PAGE_SIZE = 50;
+
+function parsePageParam(value: string | null): number {
+  const parsed = Number.parseInt(value ?? String(DEFAULT_PAGE), 10);
+  if (!Number.isFinite(parsed) || parsed < 1) {
+    return DEFAULT_PAGE;
+  }
+  return parsed;
+}
+
+function parsePageSizeParam(value: string | null): number {
+  const parsed = Number.parseInt(value ?? String(DEFAULT_PAGE_SIZE), 10);
+  if (!Number.isFinite(parsed) || parsed < 1) {
+    return DEFAULT_PAGE_SIZE;
+  }
+  return Math.min(MAX_PAGE_SIZE, parsed);
+}
+
 export async function GET(request: NextRequest) {
   const token = request.cookies.get(SESSION_COOKIE_NAME)?.value;
   if (!token) {
@@ -17,11 +37,20 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   }
 
+  const page = parsePageParam(request.nextUrl.searchParams.get("page"));
+  const pageSize = parsePageSizeParam(request.nextUrl.searchParams.get("pageSize"));
+
   try {
-    const products = await readProductListForCountry(user.country);
+    const allProducts = await readProductListForCountry(user.country);
+    const totalItems = allProducts.length;
+    const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+    const currentPage = Math.min(Math.max(page, 1), totalPages);
+    const start = (currentPage - 1) * pageSize;
+    const pageProducts = allProducts.slice(start, start + pageSize);
+
     const cache = createDriveLookupCache();
     const productsWithThumbnails = await Promise.all(
-      products.map(async (product) => ({
+      pageProducts.map(async (product) => ({
         ...product,
         thumbnailFileId: await cache.getProductThumbnailFileId(product.id),
       }))
@@ -33,6 +62,14 @@ export async function GET(request: NextRequest) {
         country: user.country,
         companyName: user.companyName,
         contactName: user.contactName,
+      },
+      pagination: {
+        page: currentPage,
+        pageSize,
+        totalItems,
+        totalPages,
+        hasPrev: currentPage > 1,
+        hasNext: currentPage < totalPages,
       },
       products: productsWithThumbnails,
     });
