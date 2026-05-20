@@ -14,6 +14,7 @@ type ProductRow = {
   name: string;
   price: string;
   currency: string;
+  thumbnailFileId: string | null;
 };
 
 type ProductsResponse =
@@ -92,9 +93,10 @@ export default function ProductsPage() {
             </section>
 
             <div className="overflow-x-auto rounded border border-neutral-300">
-              <table className="w-full min-w-[36rem] border-collapse text-left text-sm">
+              <table className="w-full min-w-[42rem] border-collapse text-left text-sm">
                 <thead>
                   <tr className="border-b border-neutral-300 bg-neutral-50">
+                    <th className="border-b border-neutral-200 px-3 py-2 font-medium">画像</th>
                     <th className="border-b border-neutral-200 px-3 py-2 font-medium">ID</th>
                     <th className="border-b border-neutral-200 px-3 py-2 font-medium">製品名</th>
                     <th className="border-b border-neutral-200 px-3 py-2 font-medium">価格</th>
@@ -104,6 +106,21 @@ export default function ProductsPage() {
                 <tbody>
                   {data.products.map((p, index) => (
                     <tr key={`${index}-${p.id}`} className="border-b border-neutral-100 last:border-b-0">
+                      <td className="px-3 py-2 align-top">
+                        {p.thumbnailFileId ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={`/api/drive-image?fileId=${encodeURIComponent(p.thumbnailFileId)}`}
+                            alt={p.name}
+                            loading="lazy"
+                            className="h-16 w-16 rounded border border-neutral-200 object-cover"
+                          />
+                        ) : (
+                          <span className="inline-flex h-16 w-16 items-center justify-center rounded border border-dashed border-neutral-300 bg-neutral-50 text-xs text-neutral-500">
+                            No Image
+                          </span>
+                        )}
+                      </td>
                       <td className="px-3 py-2 align-top font-mono text-xs">{p.id}</td>
                       <td className="px-3 py-2 align-top">{p.name}</td>
                       <td className="px-3 py-2 align-top">{p.price}</td>

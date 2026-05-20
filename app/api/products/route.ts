@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { SESSION_COOKIE_NAME, verifySessionToken } from "@/lib/auth";
+import { createDriveLookupCache } from "@/lib/drive";
 import { readProductListForCountry } from "@/lib/sheets";
 
 export const runtime = "nodejs";
@@ -18,6 +19,14 @@ export async function GET(request: NextRequest) {
 
   try {
     const products = await readProductListForCountry(user.country);
+    const cache = createDriveLookupCache();
+    const productsWithThumbnails = await Promise.all(
+      products.map(async (product) => ({
+        ...product,
+        thumbnailFileId: await cache.getProductThumbnailFileId(product.id),
+      }))
+    );
+
     return NextResponse.json({
       ok: true,
       user: {
@@ -25,7 +34,7 @@ export async function GET(request: NextRequest) {
         companyName: user.companyName,
         contactName: user.contactName,
       },
-      products,
+      products: productsWithThumbnails,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "";

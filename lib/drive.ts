@@ -79,12 +79,13 @@ async function findChildFolder(
 
 async function listImageFilesInFolder(
   drive: drive_v3.Drive,
-  folderId: string
+  folderId: string,
+  pageSize = 100
 ): Promise<DriveImageFile[]> {
   const res = await drive.files.list({
     q: `'${folderId}' in parents and mimeType contains 'image/' and trashed = false`,
     fields: "files(id, name, mimeType)",
-    pageSize: 100,
+    pageSize,
     orderBy: "name",
     supportsAllDrives: true,
     includeItemsFromAllDrives: true,
@@ -104,6 +105,144 @@ async function listImageFilesInFolder(
       name: file.name,
       mimeType: file.mimeType,
     }));
+}
+
+async function listFirstImageFileIdInFolder(
+  drive: drive_v3.Drive,
+  folderId: string
+): Promise<string | null> {
+  const images = await listImageFilesInFolder(drive, folderId, 1);
+  return images[0]?.id ?? null;
+}
+
+/** 同一 HTTP リクエスト内での Drive フォルダ検索結果を再利用する */
+export class DriveLookupCache {
+  private readonly drive: drive_v3.Drive;
+  private readonly rootFolderId: string;
+  private readonly auctionFolders = new Map<string, string | null>();
+  private readonly roundFolders = new Map<string, string | null>();
+  private readonly productFolders = new Map<string, string | null>();
+  private readonly folderFirstImage = new Map<string, string | null>();
+  private readonly auctionPending = new Map<string, Promise<string | null>>();
+  private readonly roundPending = new Map<string, Promise<string | null>>();
+  private readonly productPending = new Map<string, Promise<string | null>>();
+  private readonly firstImagePending = new Map<string, Promise<string | null>>();
+
+  constructor(drive?: drive_v3.Drive, rootFolderId?: string) {
+    const resolvedRoot = rootFolderId ?? process.env.GOOGLE_DRIVE_ROOT_FOLDER_ID;
+    if (!resolvedRoot) {
+      throw new Error("GOOGLE_DRIVE_ROOT_FOLDER_ID is not set");
+    }
+    this.drive = drive ?? createDriveClient();
+    this.rootFolderId = resolvedRoot;
+  }
+
+  private async getAuctionFolderId(auctionName: string): Promise<string | null> {
+    if (this.auctionFolders.has(auctionName)) {
+      return this.auctionFolders.get(auctionName) ?? null;
+    }
+    let pending = this.auctionPending.get(auctionName);
+    if (!pending) {
+      pending = findChildFolder(this.drive, this.rootFolderId, auctionName).then((id) => {
+        this.auctionFolders.set(auctionName, id);
+        return id;
+      });
+      this.auctionPending.set(auctionName, pending);
+    }
+    return pending;
+  }
+
+  private async getRoundFolderId(
+    auctionFolderId: string,
+    roundFolderName: string
+  ): Promise<string | null> {
+    const key = `${auctionFolderId}/${roundFolderName}`;
+    if (this.roundFolders.has(key)) {
+      return this.roundFolders.get(key) ?? null;
+    }
+    let pending = this.roundPending.get(key);
+    if (!pending) {
+      pending = findChildFolder(this.drive, auctionFolderId, roundFolderName).then((id) => {
+        this.roundFolders.set(key, id);
+        return id;
+      });
+      this.roundPending.set(key, pending);
+    }
+    return pending;
+  }
+
+  private async getProductFolderId(
+    roundFolderId: string,
+    productFolderName: string
+  ): Promise<string | null> {
+    const key = `${roundFolderId}/${productFolderName}`;
+    if (this.productFolders.has(key)) {
+      return this.productFolders.get(key) ?? null;
+    }
+    let pending = this.productPending.get(key);
+    if (!pending) {
+      pending = findChildFolder(this.drive, roundFolderId, productFolderName).then((id) => {
+        this.productFolders.set(key, id);
+        return id;
+      });
+      this.productPending.set(key, pending);
+    }
+    return pending;
+  }
+
+  private async getFirstImageFileId(productFolderId: string): Promise<string | null> {
+    if (this.folderFirstImage.has(productFolderId)) {
+      return this.folderFirstImage.get(productFolderId) ?? null;
+    }
+    let pending = this.firstImagePending.get(productFolderId);
+    if (!pending) {
+      pending = listFirstImageFileIdInFolder(this.drive, productFolderId).then((id) => {
+        this.folderFirstImage.set(productFolderId, id);
+        return id;
+      });
+      this.firstImagePending.set(productFolderId, pending);
+    }
+    return pending;
+  }
+
+  /** 商品IDの1枚目画像 fileId を返す。失敗時は null（一覧全体は落とさない） */
+  async getProductThumbnailFileId(productId: string): Promise<string | null> {
+    try {
+      const parsed = parseProductId(productId);
+      const auctionFolderId = await this.getAuctionFolderId(parsed.auctionName);
+      if (!auctionFolderId) return null;
+
+      const roundFolderId = await this.getRoundFolderId(auctionFolderId, parsed.roundFolderName);
+      if (!roundFolderId) return null;
+
+      const productFolderId = await this.getProductFolderId(
+        roundFolderId,
+        parsed.productFolderName
+      );
+      if (!productFolderId) return null;
+
+      return this.getFirstImageFileId(productFolderId);
+    } catch {
+      return null;
+    }
+  }
+}
+
+export function createDriveLookupCache(): DriveLookupCache {
+  return new DriveLookupCache();
+}
+
+/**
+ * 複数商品のサムネイル fileId を同一リクエスト内キャッシュ付きで取得する。
+ */
+export async function getProductThumbnailFileIds(
+  productIds: string[],
+  cache = createDriveLookupCache()
+): Promise<Map<string, string | null>> {
+  const results = await Promise.all(
+    productIds.map(async (id) => [id, await cache.getProductThumbnailFileId(id)] as const)
+  );
+  return new Map(results);
 }
 
 /**
