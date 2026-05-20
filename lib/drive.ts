@@ -154,3 +154,72 @@ export async function findProductDriveImages(
     imageCount: images.length,
   };
 }
+
+export class DriveImageNotFoundError extends Error {
+  constructor() {
+    super("Image not found");
+    this.name = "DriveImageNotFoundError";
+  }
+}
+
+export type DriveImageContent = {
+  data: Buffer;
+  mimeType: string;
+};
+
+function isDriveNotFoundError(err: unknown): boolean {
+  if (typeof err === "object" && err !== null && "code" in err) {
+    return (err as { code: number }).code === 404;
+  }
+  return false;
+}
+
+/**
+ * Google Drive 上の画像ファイル本体を取得する（alt=media）。
+ */
+export async function getDriveImageContent(fileId: string): Promise<DriveImageContent> {
+  const drive = createDriveClient();
+
+  let mimeType: string | null | undefined;
+  let trashed: boolean | null | undefined;
+
+  try {
+    const metaRes = await drive.files.get({
+      fileId,
+      fields: "mimeType, trashed",
+      supportsAllDrives: true,
+    });
+    mimeType = metaRes.data.mimeType;
+    trashed = metaRes.data.trashed ?? false;
+  } catch (err) {
+    if (isDriveNotFoundError(err)) {
+      throw new DriveImageNotFoundError();
+    }
+    throw err;
+  }
+
+  if (trashed || !mimeType || !mimeType.startsWith("image/")) {
+    throw new DriveImageNotFoundError();
+  }
+
+  try {
+    const mediaRes = await drive.files.get(
+      {
+        fileId,
+        alt: "media",
+        supportsAllDrives: true,
+      },
+      { responseType: "arraybuffer" }
+    );
+
+    return {
+      data: Buffer.from(mediaRes.data as ArrayBuffer),
+      mimeType,
+    };
+  } catch (err) {
+    if (isDriveNotFoundError(err)) {
+      throw new DriveImageNotFoundError();
+    }
+    throw err;
+  }
+}
