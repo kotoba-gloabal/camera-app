@@ -6,14 +6,18 @@ export const metadata: Metadata = {
   description: "B2B used camera catalog",
 };
 
+import { SiteShell } from "@/components/SiteShell";
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ja">
-      <body className="antialiased">{children}</body>
+    <html lang="en">
+      <body>
+        <SiteShell>{children}</SiteShell>
+      </body>
     </html>
   );
 }

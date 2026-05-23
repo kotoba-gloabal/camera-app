@@ -3,6 +3,10 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { ButtonLink } from "@/components/Button";
+import { Card } from "@/components/Card";
+import { ImageLightbox } from "@/components/ImageLightbox";
+import { PageContainer } from "@/components/PageContainer";
 
 type MeUser = {
   country: string;
@@ -36,25 +40,6 @@ export default function ProductDetailPage() {
     null
   );
   const [selectedImageFileId, setSelectedImageFileId] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!selectedImageFileId) return;
-
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setSelectedImageFileId(null);
-      }
-    };
-
-    window.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      window.removeEventListener("keydown", onKeyDown);
-    };
-  }, [selectedImageFileId]);
 
   useEffect(() => {
     if (!productId) {
@@ -101,130 +86,132 @@ export default function ProductDetailPage() {
   }, [productId]);
 
   return (
-    <div className="min-h-screen bg-white text-neutral-900">
-      <main className="mx-auto max-w-5xl space-y-6 p-6">
-        <h1 className="text-xl font-semibold">商品詳細</h1>
+    <PageContainer className="space-y-8">
+      <Link
+        href="/products"
+        className="inline-flex items-center text-sm font-medium text-[#2563EB] hover:underline"
+      >
+        ← Back to products
+      </Link>
 
-        {loading ? <p>読み込み中…</p> : null}
+      {loading ? (
+        <Card>
+          <p className="text-sm text-[#6B7280]">Loading product…</p>
+        </Card>
+      ) : null}
 
-        {!loading && unauthorized ? (
-          <div className="space-y-3 rounded border border-neutral-200 bg-white p-4">
-            <p>ログインしてください。</p>
-            <Link href="/login" className="text-blue-600 underline">
-              ログインへ
-            </Link>
+      {!loading && unauthorized ? (
+        <Card className="text-center">
+          <p className="text-[#111827]">Please sign in to view this product.</p>
+          <div className="mt-4">
+            <ButtonLink href="/login">Login</ButtonLink>
           </div>
-        ) : null}
+        </Card>
+      ) : null}
 
-        {!loading && notFound ? (
-          <div className="space-y-3 rounded border border-neutral-200 bg-white p-4">
-            <p>商品が見つかりません。</p>
-            <Link href="/products" className="text-blue-600 underline">
-              商品一覧へ
-            </Link>
-          </div>
-        ) : null}
-
-        {!loading && error ? <p className="text-red-600">{error}</p> : null}
-
-        {!loading && data ? (
-          <div className="space-y-6">
-            <section className="space-y-2 rounded border border-neutral-200 p-4 text-sm">
-              <p>
-                <span className="font-medium">商品ID:</span>{" "}
-                <span className="font-mono">{data.product.id}</span>
-              </p>
-              <p>
-                <span className="font-medium">製品名:</span> {data.product.name}
-              </p>
-              <p>
-                <span className="font-medium">価格:</span>{" "}
-                {data.product.soldOut ? (
-                  <span className="font-medium text-red-600">売約済み</span>
-                ) : (
-                  data.product.price
-                )}
-              </p>
-              {!data.product.soldOut ? (
-                <p>
-                  <span className="font-medium">通貨:</span> {data.product.currency}
-                </p>
-              ) : null}
-            </section>
-
-            <section className="space-y-3">
-              <h2 className="text-lg font-medium">画像</h2>
-              {data.product.imageFileIds.length > 0 ? (
-                <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
-                  {data.product.imageFileIds.map((fileId) => (
-                    <button
-                      key={fileId}
-                      type="button"
-                      className="cursor-pointer rounded border border-neutral-200 p-0"
-                      onClick={() => setSelectedImageFileId(fileId)}
-                      aria-label={`${data.product.name} の画像を拡大表示`}
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={`/api/drive-image?fileId=${encodeURIComponent(fileId)}`}
-                        alt={data.product.name}
-                        loading="lazy"
-                        className="aspect-square w-full rounded object-cover"
-                      />
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-neutral-600">画像がありません</p>
-              )}
-            </section>
-
-            <p>
-              <Link href="/products" className="text-blue-600 underline">
-                商品一覧へ戻る
-              </Link>
-            </p>
-          </div>
-        ) : null}
-
-        {!loading && !data && !unauthorized && !notFound && !error ? (
-          <p>
-            <Link href="/products" className="text-blue-600 underline">
-              商品一覧へ
-            </Link>
+      {!loading && notFound ? (
+        <Card className="text-center">
+          <p className="font-medium text-[#111827]">Product not found</p>
+          <p className="mt-2 text-sm text-[#6B7280]">
+            This item may be unavailable or no longer listed.
           </p>
-        ) : null}
-      </main>
+          <div className="mt-4">
+            <ButtonLink href="/products" variant="outline">
+              Back to inventory
+            </ButtonLink>
+          </div>
+        </Card>
+      ) : null}
 
-      {selectedImageFileId ? (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
-          role="dialog"
-          aria-modal="true"
-          aria-label="拡大画像"
-          onClick={() => setSelectedImageFileId(null)}
-        >
-          <div
-            className="relative max-h-[85vh] max-w-[90vw]"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <button
-              type="button"
-              className="absolute -right-2 -top-2 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white text-xl leading-none text-neutral-800 shadow-md"
-              onClick={() => setSelectedImageFileId(null)}
-              aria-label="閉じる"
-            >
-              ×
-            </button>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={`/api/drive-image?fileId=${encodeURIComponent(selectedImageFileId)}`}
-              alt={data?.product.name ?? "商品画像"}
-              className="max-h-[85vh] max-w-[90vw] object-contain"
-            />
+      {!loading && error ? (
+        <Card>
+          <p className="text-sm text-[#DC2626]">{error}</p>
+        </Card>
+      ) : null}
+
+      {!loading && data ? (
+        <div className="space-y-8">
+          <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_280px] lg:items-start">
+            <section className="space-y-6">
+              <div>
+                <span className="inline-flex rounded-md bg-slate-100 px-2.5 py-1 font-mono text-xs font-medium text-[#6B7280]">
+                  {data.product.id}
+                </span>
+                <h1 className="mt-4 text-2xl font-semibold leading-tight tracking-tight text-[#111827] sm:text-3xl">
+                  {data.product.name}
+                </h1>
+              </div>
+
+              <div>
+                <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-[#6B7280]">
+                  Product photos
+                </h2>
+                {data.product.imageFileIds.length > 0 ? (
+                  <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+                    {data.product.imageFileIds.map((fileId) => (
+                      <button
+                        key={fileId}
+                        type="button"
+                        className="group overflow-hidden rounded-xl border border-gray-200 bg-white p-2 shadow-sm transition hover:border-blue-200 hover:shadow-md"
+                        onClick={() => setSelectedImageFileId(fileId)}
+                        aria-label={`Enlarge ${data.product.name}`}
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={`/api/drive-image?fileId=${encodeURIComponent(fileId)}`}
+                          alt={data.product.name}
+                          loading="lazy"
+                          className="aspect-square w-full rounded-lg object-cover transition duration-200 group-hover:scale-[1.02] group-hover:opacity-95"
+                        />
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <Card>
+                    <p className="text-sm text-[#6B7280]">No images available for this product.</p>
+                  </Card>
+                )}
+              </div>
+            </section>
+
+            <aside className="space-y-4 lg:sticky lg:top-8">
+              <Card>
+                <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">
+                  Pricing
+                </p>
+                {data.product.soldOut ? (
+                  <p className="mt-3 text-2xl font-bold text-[#DC2626]">売約済み</p>
+                ) : (
+                  <div className="mt-3">
+                    <p className="text-3xl font-bold tracking-tight text-[#111827]">
+                      {data.product.price}
+                    </p>
+                    <p className="mt-1 text-sm font-medium text-[#6B7280]">
+                      {data.product.currency}
+                    </p>
+                  </div>
+                )}
+              </Card>
+
+              <Card className="text-sm">
+                <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">
+                  Buyer
+                </p>
+                <p className="mt-2 font-medium text-[#111827]">{data.user.companyName}</p>
+                <p className="text-[#6B7280]">{data.user.country}</p>
+              </Card>
+            </aside>
           </div>
         </div>
       ) : null}
-    </div>
+
+      {selectedImageFileId && data ? (
+        <ImageLightbox
+          fileId={selectedImageFileId}
+          alt={data.product.name}
+          onClose={() => setSelectedImageFileId(null)}
+        />
+      ) : null}
+    </PageContainer>
   );
 }

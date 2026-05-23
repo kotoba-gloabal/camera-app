@@ -2,6 +2,9 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { Button, ButtonLink } from "@/components/Button";
+import { Card } from "@/components/Card";
+import { PageContainer } from "@/components/PageContainer";
 
 const PAGE_SIZE = 20;
 
@@ -58,12 +61,12 @@ const DEFAULT_QUERY: ProductQuery = {
 };
 
 const SORT_OPTIONS = [
-  { value: "id:asc", label: "商品ID 昇順" },
-  { value: "id:desc", label: "商品ID 降順" },
-  { value: "name:asc", label: "商品名 昇順" },
-  { value: "name:desc", label: "商品名 降順" },
-  { value: "price:asc", label: "価格 昇順" },
-  { value: "price:desc", label: "価格 降順" },
+  { value: "id:asc", label: "Product ID (A–Z)" },
+  { value: "id:desc", label: "Product ID (Z–A)" },
+  { value: "name:asc", label: "Product Name (A–Z)" },
+  { value: "name:desc", label: "Product Name (Z–A)" },
+  { value: "price:asc", label: "Price (Low to High)" },
+  { value: "price:desc", label: "Price (High to Low)" },
 ] as const;
 
 function parseSortValue(value: string): { sortBy: string; sortOrder: string } {
@@ -169,64 +172,108 @@ export default function ProductsPage() {
   }, [page, appliedQuery]);
 
   return (
-    <div className="min-h-screen bg-white text-neutral-900">
-      <main className="mx-auto max-w-5xl space-y-6 p-6">
-        <h1 className="text-xl font-semibold">商品一覧</h1>
+    <PageContainer className="space-y-8">
+      <section>
+        <p className="text-xs font-semibold uppercase tracking-[0.15em] text-[#2563EB]">
+          Inventory
+        </p>
+        <h1 className="mt-2 text-3xl font-semibold tracking-tight text-[#111827]">
+          Camera Inventory
+        </h1>
+        <p className="mt-2 max-w-2xl text-[#6B7280]">
+          Browse available Japanese used cameras with buyer-specific pricing.
+        </p>
+      </section>
 
-        {!unauthorized ? (
-          <section className="space-y-4 rounded border border-neutral-200 bg-white p-4">
+      {loading ? (
+        <Card>
+          <p className="text-sm text-[#6B7280]">Loading inventory…</p>
+        </Card>
+      ) : null}
+
+      {!loading && unauthorized ? (
+        <Card className="text-center">
+          <p className="text-[#111827]">Please sign in to view the catalog.</p>
+          <div className="mt-4">
+            <ButtonLink href="/login">Login</ButtonLink>
+          </div>
+        </Card>
+      ) : null}
+
+      {!loading && error ? (
+        <Card>
+          <p className="text-sm text-[#DC2626]">{error}</p>
+        </Card>
+      ) : null}
+
+      {!loading && data ? (
+        <>
+          <Card className="flex flex-wrap items-center gap-4">
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wide text-[#6B7280]">
+                Buyer account
+              </p>
+              <p className="mt-1 text-sm font-semibold text-[#111827]">{data.user.companyName}</p>
+              <p className="text-sm text-[#6B7280]">{data.user.country}</p>
+            </div>
+            <div className="ml-auto text-right text-sm text-[#6B7280]">
+              <p>
+                <span className="font-medium text-[#111827]">{data.pagination.totalItems}</span>{" "}
+                items
+              </p>
+              <p>
+                Page {data.pagination.page} of {data.pagination.totalPages}
+              </p>
+            </div>
+          </Card>
+
+          <Card className="space-y-5">
             <form
-              className="flex flex-col gap-3 sm:flex-row sm:items-end"
+              className="flex flex-col gap-4 lg:flex-row lg:items-end"
               onSubmit={(e) => {
                 e.preventDefault();
                 applySearch(1);
               }}
             >
-              <div className="flex flex-1 flex-col gap-1">
-                <label htmlFor="search" className="text-sm font-medium">
-                  検索
+              <div className="flex-1 space-y-1.5">
+                <label htmlFor="search" className="text-sm font-medium text-[#111827]">
+                  Search
                 </label>
                 <input
                   id="search"
                   type="search"
-                  placeholder="ID・商品名で検索"
-                  className="rounded border border-neutral-300 px-3 py-2 text-sm"
+                  placeholder="Search by ID or product name"
+                  className="input-field"
                   value={searchInput}
                   onChange={(e) => setSearchInput(e.target.value)}
                 />
               </div>
-              <button
-                type="submit"
-                className="rounded bg-neutral-800 px-4 py-2 text-sm text-white"
-              >
-                検索
-              </button>
+              <Button type="submit">Search</Button>
             </form>
 
-            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
-              <div className="flex flex-col gap-1">
-                <label htmlFor="soldStatus" className="text-sm font-medium">
-                  売約済み表示
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <label htmlFor="soldStatus" className="text-sm font-medium text-[#111827]">
+                  Sold items
                 </label>
                 <select
                   id="soldStatus"
-                  className="rounded border border-neutral-300 px-3 py-2 text-sm"
+                  className="select-field"
                   value={appliedQuery.soldStatus}
                   onChange={(e) => applySoldStatus(e.target.value as SoldStatusFilter)}
                 >
-                  <option value="includeSoldOut">売約済みも表示</option>
-                  <option value="excludeSoldOut">売約済みを除外</option>
-                  <option value="onlySoldOut">売約済みのみ</option>
+                  <option value="includeSoldOut">Include sold items</option>
+                  <option value="excludeSoldOut">Exclude sold items</option>
+                  <option value="onlySoldOut">Sold items only</option>
                 </select>
               </div>
-
-              <div className="flex flex-col gap-1">
-                <label htmlFor="sort" className="text-sm font-medium">
-                  並べ替え
+              <div className="space-y-1.5">
+                <label htmlFor="sort" className="text-sm font-medium text-[#111827]">
+                  Sort by
                 </label>
                 <select
                   id="sort"
-                  className="rounded border border-neutral-300 px-3 py-2 text-sm"
+                  className="select-field"
                   value={sortValue}
                   onChange={(e) => applySort(e.target.value)}
                 >
@@ -238,134 +285,90 @@ export default function ProductsPage() {
                 </select>
               </div>
             </div>
-          </section>
-        ) : null}
+          </Card>
 
-        {loading ? <p>読み込み中…</p> : null}
-
-        {!loading && unauthorized ? (
-          <div className="space-y-3 rounded border border-neutral-200 bg-white p-4">
-            <p>ログインしてください。</p>
-            <Link href="/login" className="text-blue-600 underline">
-              ログインへ
-            </Link>
-          </div>
-        ) : null}
-
-        {!loading && error ? <p className="text-red-600">{error}</p> : null}
-
-        {!loading && data ? (
-          <div className="space-y-4">
-            <section className="text-sm">
-              <p>
-                <span className="font-medium">国:</span> {data.user.country}
+          {data.products.length === 0 ? (
+            <Card className="py-12 text-center">
+              <p className="text-base font-medium text-[#111827]">No matching products</p>
+              <p className="mt-1 text-sm text-[#6B7280]">
+                Try adjusting your search or filter criteria.
               </p>
-              <p>
-                <span className="font-medium">社名:</span> {data.user.companyName}
-              </p>
-              <p>
-                <span className="font-medium">商品件数:</span> {data.pagination.totalItems}
-              </p>
-              <p>
-                <span className="font-medium">ページ:</span> {data.pagination.page} /{" "}
-                {data.pagination.totalPages}
-              </p>
-            </section>
+            </Card>
+          ) : (
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {data.products.map((p) => (
+                <Card key={p.id} className="flex flex-col overflow-hidden p-0">
+                  <div className="aspect-square bg-white p-3">
+                    {p.thumbnailFileId ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={`/api/drive-image?fileId=${encodeURIComponent(p.thumbnailFileId)}`}
+                        alt={p.name}
+                        loading="lazy"
+                        className="h-full w-full rounded-lg border border-gray-100 object-cover shadow-sm"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center rounded-lg border border-dashed border-gray-200 bg-gray-50 text-xs text-[#6B7280]">
+                        No Image
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex flex-1 flex-col gap-3 border-t border-gray-100 p-4">
+                    <div>
+                      <p className="font-mono text-xs text-[#6B7280]">{p.id}</p>
+                      <h2 className="mt-1 line-clamp-2 text-sm font-semibold leading-snug text-[#111827]">
+                        {p.name}
+                      </h2>
+                    </div>
+                    <div>
+                      {p.soldOut ? (
+                        <span className="inline-flex rounded-full bg-red-50 px-2.5 py-1 text-xs font-semibold text-[#DC2626] ring-1 ring-red-200">
+                          売約済み
+                        </span>
+                      ) : (
+                        <p className="text-lg font-semibold text-[#111827]">
+                          {p.price}{" "}
+                          <span className="text-sm font-medium text-[#6B7280]">{p.currency}</span>
+                        </p>
+                      )}
+                    </div>
+                    <Link
+                      href={`/products/${encodeURIComponent(p.id)}`}
+                      className="mt-auto text-sm font-medium text-[#2563EB] hover:underline"
+                    >
+                      View details →
+                    </Link>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
 
-            {data.products.length === 0 ? (
-              <p className="rounded border border-neutral-200 bg-neutral-50 p-4 text-sm text-neutral-600">
-                該当する商品がありません
-              </p>
-            ) : (
-              <div className="overflow-x-auto rounded border border-neutral-300">
-                <table className="w-full min-w-[42rem] border-collapse text-left text-sm">
-                  <thead>
-                    <tr className="border-b border-neutral-300 bg-neutral-50">
-                      <th className="border-b border-neutral-200 px-3 py-2 font-medium">画像</th>
-                      <th className="border-b border-neutral-200 px-3 py-2 font-medium">ID</th>
-                      <th className="border-b border-neutral-200 px-3 py-2 font-medium">製品名</th>
-                      <th className="border-b border-neutral-200 px-3 py-2 font-medium">価格</th>
-                      <th className="border-b border-neutral-200 px-3 py-2 font-medium">通貨</th>
-                      <th className="border-b border-neutral-200 px-3 py-2 font-medium">詳細</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.products.map((p, index) => (
-                      <tr
-                        key={`${index}-${p.id}`}
-                        className="border-b border-neutral-100 last:border-b-0"
-                      >
-                        <td className="px-3 py-2 align-top">
-                          {p.thumbnailFileId ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img
-                              src={`/api/drive-image?fileId=${encodeURIComponent(p.thumbnailFileId)}`}
-                              alt={p.name}
-                              loading="lazy"
-                              className="h-16 w-16 rounded border border-neutral-200 object-cover"
-                            />
-                          ) : (
-                            <span className="inline-flex h-16 w-16 items-center justify-center rounded border border-dashed border-neutral-300 bg-neutral-50 text-xs text-neutral-500">
-                              No Image
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-3 py-2 align-top font-mono text-xs">{p.id}</td>
-                        <td className="px-3 py-2 align-top">{p.name}</td>
-                        <td className="px-3 py-2 align-top">
-                          {p.soldOut ? (
-                            <span className="font-medium text-red-600">売約済み</span>
-                          ) : (
-                            p.price
-                          )}
-                        </td>
-                        <td className="px-3 py-2 align-top">{p.soldOut ? "" : p.currency}</td>
-                        <td className="px-3 py-2 align-top">
-                          <Link
-                            href={`/products/${encodeURIComponent(p.id)}`}
-                            className="text-blue-600 underline"
-                          >
-                            詳細
-                          </Link>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-
-            <div className="flex flex-wrap items-center gap-3">
-              <button
+          {data.products.length > 0 ? (
+            <div className="flex flex-wrap items-center justify-center gap-3">
+              <Button
                 type="button"
-                className="rounded border border-neutral-300 px-3 py-1.5 text-sm disabled:cursor-not-allowed disabled:opacity-40"
+                variant="outline"
                 disabled={!data.pagination.hasPrev || loading}
                 onClick={() => setPage((current) => Math.max(1, current - 1))}
               >
-                前へ
-              </button>
-              <button
+                Previous
+              </Button>
+              <span className="px-2 text-sm text-[#6B7280]">
+                Page {data.pagination.page} of {data.pagination.totalPages}
+              </span>
+              <Button
                 type="button"
-                className="rounded border border-neutral-300 px-3 py-1.5 text-sm disabled:cursor-not-allowed disabled:opacity-40"
+                variant="outline"
                 disabled={!data.pagination.hasNext || loading}
                 onClick={() => setPage((current) => current + 1)}
               >
-                次へ
-              </button>
-              <span className="text-sm text-neutral-600">
-                {data.pagination.page} / {data.pagination.totalPages} ページ（全{" "}
-                {data.pagination.totalItems} 件）
-              </span>
+                Next
+              </Button>
             </div>
-          </div>
-        ) : null}
-
-        <p>
-          <Link href="/" className="text-blue-600 underline">
-            トップへ
-          </Link>
-        </p>
-      </main>
-    </div>
+          ) : null}
+        </>
+      ) : null}
+    </PageContainer>
   );
 }

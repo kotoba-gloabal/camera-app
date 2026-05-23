@@ -3,6 +3,9 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { Button } from "@/components/Button";
+import { Card } from "@/components/Card";
+import { PageContainer } from "@/components/PageContainer";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -37,54 +40,69 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="mx-auto max-w-md space-y-6 p-6">
-      <h1 className="text-xl font-semibold">ログイン</h1>
-      <form className="space-y-4" onSubmit={handleSubmit}>
-        <div className="flex flex-col gap-1">
-          <label htmlFor="loginId">ID</label>
-          <input
-            id="loginId"
-            name="loginId"
-            type="text"
-            autoComplete="username"
-            className="rounded border border-neutral-300 px-2 py-1"
-            value={loginId}
-            onChange={(e) => setLoginId(e.target.value)}
-            required
-          />
-        </div>
-        <div className="flex flex-col gap-1">
-          <label htmlFor="password">PASS</label>
-          <input
-            id="password"
-            name="password"
-            type="password"
-            autoComplete="current-password"
-            className="rounded border border-neutral-300 px-2 py-1"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-        </div>
-        <button
-          type="submit"
-          className="rounded bg-neutral-800 px-3 py-2 text-white disabled:opacity-50"
-          disabled={pending}
-        >
-          ログイン
-        </button>
-      </form>
-      {error ? <p className="text-red-600">{error}</p> : null}
-      <p>
-        <Link href="/products" className="text-blue-600 underline">
-          商品一覧へ（要ログイン）
-        </Link>
-      </p>
-      <p>
-        <Link href="/" className="text-blue-600 underline">
-          トップへ
-        </Link>
-      </p>
-    </main>
+    <PageContainer className="flex min-h-[calc(100vh-5rem)] items-center justify-center py-12">
+      <div className="w-full max-w-md">
+        <Card>
+          <div className="mb-8 text-center">
+            <p className="text-xs font-semibold uppercase tracking-[0.15em] text-[#2563EB]">
+              Wholesale Access
+            </p>
+            <h1 className="mt-2 text-2xl font-semibold text-[#111827]">Buyer Login</h1>
+            <p className="mt-2 text-sm leading-relaxed text-[#6B7280]">
+              Access wholesale camera inventory and country-specific pricing.
+            </p>
+          </div>
+
+          <form className="space-y-5" onSubmit={handleSubmit}>
+            <div className="space-y-1.5">
+              <label htmlFor="loginId" className="text-sm font-medium text-[#111827]">
+                Login ID
+              </label>
+              <input
+                id="loginId"
+                name="loginId"
+                type="text"
+                autoComplete="username"
+                className="input-field"
+                value={loginId}
+                onChange={(e) => setLoginId(e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label htmlFor="password" className="text-sm font-medium text-[#111827]">
+                Password
+              </label>
+              <input
+                id="password"
+                name="password"
+                type="password"
+                autoComplete="current-password"
+                className="input-field"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+            </div>
+
+            {error ? (
+              <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-[#DC2626]">
+                {error}
+              </div>
+            ) : null}
+
+            <Button type="submit" variant="secondary" className="w-full" disabled={pending}>
+              {pending ? "Signing in…" : "Sign in"}
+            </Button>
+          </form>
+
+          <p className="mt-6 text-center text-sm text-[#6B7280]">
+            <Link href="/" className="font-medium text-[#2563EB] hover:underline">
+              Back to home
+            </Link>
+          </p>
+        </Card>
+      </div>
+    </PageContainer>
   );
 }
