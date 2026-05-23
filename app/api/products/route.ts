@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { SESSION_COOKIE_NAME, verifySessionToken } from "@/lib/auth";
-import { createDriveLookupCache } from "@/lib/drive";
+import { createDriveLookupCache, getPreferredThumbnailFileId } from "@/lib/drive";
 import { readProductListForCountry } from "@/lib/sheets";
 
 export const runtime = "nodejs";
@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
     const productsWithThumbnails = await Promise.all(
       pageProducts.map(async (product) => ({
         ...product,
-        thumbnailFileId: await cache.getProductThumbnailFileId(product.id),
+        thumbnailFileId: await getPreferredThumbnailFileId(product.id, cache),
       }))
     );
 

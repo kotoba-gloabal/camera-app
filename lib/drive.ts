@@ -38,6 +38,13 @@ function escapeDriveQueryString(value: string): string {
   return value.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
 }
 
+export type ProcessedSubFolderName = "thumb" | "detail";
+
+export function getProcessedRootFolderId(): string | null {
+  const id = process.env.GOOGLE_PROCESSED_DRIVE_ROOT_FOLDER_ID?.trim();
+  return id || null;
+}
+
 export function parseProductId(productId: string): ParsedProductId {
   const trimmed = productId.trim();
   const match = /^([VP])(\d+)-(.+)$/.exec(trimmed);
@@ -115,26 +122,69 @@ async function listFirstImageFileIdInFolder(
   return images[0]?.id ?? null;
 }
 
+async function listImageFileIdsInFolder(
+  drive: drive_v3.Drive,
+  folderId: string
+): Promise<string[]> {
+  const images = await listImageFilesInFolder(drive, folderId);
+  return images.map((image) => image.id);
+}
+
+/**
+ * 加工済み Drive 上の商品サブフォルダ（thumb / detail）を返す。未設定・未検出時は null。
+ */
+export async function getProcessedProductSubFolder(
+  productId: string,
+  subFolderName: ProcessedSubFolderName,
+  cache = createDriveLookupCache()
+): Promise<string | null> {
+  try {
+    const parsed = parseProductId(productId);
+    return cache.getProcessedSubFolderId(parsed, subFolderName);
+  } catch {
+    return null;
+  }
+}
+
 /** 同一 HTTP リクエスト内での Drive フォルダ検索結果を再利用する */
 export class DriveLookupCache {
   private readonly drive: drive_v3.Drive;
   private readonly rootFolderId: string;
+  private readonly processedRootFolderId: string | null;
   private readonly auctionFolders = new Map<string, string | null>();
   private readonly roundFolders = new Map<string, string | null>();
   private readonly productFolders = new Map<string, string | null>();
+  private readonly processedAuctionFolders = new Map<string, string | null>();
+  private readonly processedRoundFolders = new Map<string, string | null>();
+  private readonly processedProductFolders = new Map<string, string | null>();
+  private readonly processedSubFolders = new Map<string, string | null>();
   private readonly folderFirstImage = new Map<string, string | null>();
+  private readonly folderAllImageIds = new Map<string, string[]>();
   private readonly auctionPending = new Map<string, Promise<string | null>>();
   private readonly roundPending = new Map<string, Promise<string | null>>();
   private readonly productPending = new Map<string, Promise<string | null>>();
+  private readonly processedAuctionPending = new Map<string, Promise<string | null>>();
+  private readonly processedRoundPending = new Map<string, Promise<string | null>>();
+  private readonly processedProductPending = new Map<string, Promise<string | null>>();
+  private readonly processedSubPending = new Map<string, Promise<string | null>>();
   private readonly firstImagePending = new Map<string, Promise<string | null>>();
+  private readonly allImagesPending = new Map<string, Promise<string[]>>();
 
-  constructor(drive?: drive_v3.Drive, rootFolderId?: string) {
+  constructor(
+    drive?: drive_v3.Drive,
+    rootFolderId?: string,
+    processedRootFolderId?: string | null
+  ) {
     const resolvedRoot = rootFolderId ?? process.env.GOOGLE_DRIVE_ROOT_FOLDER_ID;
     if (!resolvedRoot) {
       throw new Error("GOOGLE_DRIVE_ROOT_FOLDER_ID is not set");
     }
     this.drive = drive ?? createDriveClient();
     this.rootFolderId = resolvedRoot;
+    this.processedRootFolderId =
+      processedRootFolderId === undefined
+        ? getProcessedRootFolderId()
+        : processedRootFolderId;
   }
 
   private async getAuctionFolderId(auctionName: string): Promise<string | null> {
@@ -190,22 +240,131 @@ export class DriveLookupCache {
     return pending;
   }
 
-  private async getFirstImageFileId(productFolderId: string): Promise<string | null> {
-    if (this.folderFirstImage.has(productFolderId)) {
-      return this.folderFirstImage.get(productFolderId) ?? null;
+  private async getFirstImageFileId(folderId: string): Promise<string | null> {
+    if (this.folderFirstImage.has(folderId)) {
+      return this.folderFirstImage.get(folderId) ?? null;
     }
-    let pending = this.firstImagePending.get(productFolderId);
+    let pending = this.firstImagePending.get(folderId);
     if (!pending) {
-      pending = listFirstImageFileIdInFolder(this.drive, productFolderId).then((id) => {
-        this.folderFirstImage.set(productFolderId, id);
+      pending = listFirstImageFileIdInFolder(this.drive, folderId).then((id) => {
+        this.folderFirstImage.set(folderId, id);
         return id;
       });
-      this.firstImagePending.set(productFolderId, pending);
+      this.firstImagePending.set(folderId, pending);
     }
     return pending;
   }
 
-  /** 商品IDの1枚目画像 fileId を返す。失敗時は null（一覧全体は落とさない） */
+  async listImageFileIdsInFolderCached(folderId: string): Promise<string[]> {
+    if (this.folderAllImageIds.has(folderId)) {
+      return this.folderAllImageIds.get(folderId) ?? [];
+    }
+    let pending = this.allImagesPending.get(folderId);
+    if (!pending) {
+      pending = listImageFileIdsInFolder(this.drive, folderId).then((ids) => {
+        this.folderAllImageIds.set(folderId, ids);
+        return ids;
+      });
+      this.allImagesPending.set(folderId, pending);
+    }
+    return pending;
+  }
+
+  private async getProcessedAuctionFolderId(auctionName: string): Promise<string | null> {
+    if (!this.processedRootFolderId) return null;
+    if (this.processedAuctionFolders.has(auctionName)) {
+      return this.processedAuctionFolders.get(auctionName) ?? null;
+    }
+    let pending = this.processedAuctionPending.get(auctionName);
+    if (!pending) {
+      pending = findChildFolder(this.drive, this.processedRootFolderId, auctionName).then((id) => {
+        this.processedAuctionFolders.set(auctionName, id);
+        return id;
+      });
+      this.processedAuctionPending.set(auctionName, pending);
+    }
+    return pending;
+  }
+
+  private async getProcessedRoundFolderId(
+    auctionFolderId: string,
+    roundFolderName: string
+  ): Promise<string | null> {
+    const key = `${auctionFolderId}/${roundFolderName}`;
+    if (this.processedRoundFolders.has(key)) {
+      return this.processedRoundFolders.get(key) ?? null;
+    }
+    let pending = this.processedRoundPending.get(key);
+    if (!pending) {
+      pending = findChildFolder(this.drive, auctionFolderId, roundFolderName).then((id) => {
+        this.processedRoundFolders.set(key, id);
+        return id;
+      });
+      this.processedRoundPending.set(key, pending);
+    }
+    return pending;
+  }
+
+  private async getProcessedProductFolderId(
+    roundFolderId: string,
+    productFolderName: string
+  ): Promise<string | null> {
+    const key = `${roundFolderId}/${productFolderName}`;
+    if (this.processedProductFolders.has(key)) {
+      return this.processedProductFolders.get(key) ?? null;
+    }
+    let pending = this.processedProductPending.get(key);
+    if (!pending) {
+      pending = findChildFolder(this.drive, roundFolderId, productFolderName).then((id) => {
+        this.processedProductFolders.set(key, id);
+        return id;
+      });
+      this.processedProductPending.set(key, pending);
+    }
+    return pending;
+  }
+
+  /** 加工済み: オークション / 開催回 / 商品 / thumb|detail フォルダID */
+  async getProcessedSubFolderId(
+    parsed: ParsedProductId,
+    subFolderName: ProcessedSubFolderName
+  ): Promise<string | null> {
+    if (!this.processedRootFolderId) return null;
+
+    const subKey = `${parsed.auctionName}/${parsed.roundFolderName}/${parsed.productFolderName}/${subFolderName}`;
+    if (this.processedSubFolders.has(subKey)) {
+      return this.processedSubFolders.get(subKey) ?? null;
+    }
+
+    let pending = this.processedSubPending.get(subKey);
+    if (!pending) {
+      pending = (async () => {
+        const auctionFolderId = await this.getProcessedAuctionFolderId(parsed.auctionName);
+        if (!auctionFolderId) return null;
+
+        const roundFolderId = await this.getProcessedRoundFolderId(
+          auctionFolderId,
+          parsed.roundFolderName
+        );
+        if (!roundFolderId) return null;
+
+        const productFolderId = await this.getProcessedProductFolderId(
+          roundFolderId,
+          parsed.productFolderName
+        );
+        if (!productFolderId) return null;
+
+        return findChildFolder(this.drive, productFolderId, subFolderName);
+      })().then((id) => {
+        this.processedSubFolders.set(subKey, id);
+        return id;
+      });
+      this.processedSubPending.set(subKey, pending);
+    }
+    return pending;
+  }
+
+  /** 商品IDの1枚目画像 fileId を返す（元画像）。失敗時は null */
   async getProductThumbnailFileId(productId: string): Promise<string | null> {
     try {
       const parsed = parseProductId(productId);
@@ -226,10 +385,73 @@ export class DriveLookupCache {
       return null;
     }
   }
+
+  /** 元画像フォルダ内の全 fileId（ファイル名順） */
+  async getOriginalProductImageFileIds(productId: string): Promise<string[]> {
+    try {
+      const parsed = parseProductId(productId);
+      const auctionFolderId = await this.getAuctionFolderId(parsed.auctionName);
+      if (!auctionFolderId) return [];
+
+      const roundFolderId = await this.getRoundFolderId(auctionFolderId, parsed.roundFolderName);
+      if (!roundFolderId) return [];
+
+      const productFolderId = await this.getProductFolderId(
+        roundFolderId,
+        parsed.productFolderName
+      );
+      if (!productFolderId) return [];
+
+      return this.listImageFileIdsInFolderCached(productFolderId);
+    } catch {
+      return [];
+    }
+  }
+
+  /** 加工済み thumb を優先し、なければ元画像1枚目 */
+  async getPreferredThumbnailFileId(productId: string): Promise<string | null> {
+    try {
+      const parsed = parseProductId(productId);
+      const thumbFolderId = await this.getProcessedSubFolderId(parsed, "thumb");
+      if (thumbFolderId) {
+        const processedId = await this.getFirstImageFileId(thumbFolderId);
+        if (processedId) return processedId;
+      }
+      return this.getProductThumbnailFileId(productId);
+    } catch {
+      return null;
+    }
+  }
 }
 
 export function createDriveLookupCache(): DriveLookupCache {
   return new DriveLookupCache();
+}
+
+/** 加工済み thumb を優先し、なければ元画像1枚目 */
+export async function getPreferredThumbnailFileId(
+  productId: string,
+  cache = createDriveLookupCache()
+): Promise<string | null> {
+  return cache.getPreferredThumbnailFileId(productId);
+}
+
+/** 加工済み detail を優先し、なければ元画像全件（ファイル名順） */
+export async function getPreferredProductImageFileIds(
+  productId: string,
+  cache = createDriveLookupCache()
+): Promise<string[]> {
+  try {
+    const parsed = parseProductId(productId);
+    const detailFolderId = await cache.getProcessedSubFolderId(parsed, "detail");
+    if (detailFolderId) {
+      const processedIds = await cache.listImageFileIdsInFolderCached(detailFolderId);
+      if (processedIds.length > 0) return processedIds;
+    }
+    return cache.getOriginalProductImageFileIds(productId);
+  } catch {
+    return [];
+  }
 }
 
 /**

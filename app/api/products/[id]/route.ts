@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { SESSION_COOKIE_NAME, verifySessionToken } from "@/lib/auth";
-import { getProductImageFileIds } from "@/lib/drive";
+import { getPreferredProductImageFileIds } from "@/lib/drive";
 import { readProductByIdForCountry } from "@/lib/sheets";
 
 export const runtime = "nodejs";
@@ -33,7 +33,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
       return NextResponse.json({ ok: false, error: "Not Found" }, { status: 404 });
     }
 
-    const imageFileIds = await getProductImageFileIds(product.id);
+    const imageFileIds = await getPreferredProductImageFileIds(product.id);
 
     return NextResponse.json({
       ok: true,
