@@ -2,7 +2,7 @@ import { createSheetsClient } from "@/lib/google";
 
 const PRODUCT_SHEET_NAME = "製品リスト";
 const TEST_RANGE = "A1:J5";
-const PRODUCT_LIST_DATA_RANGE = "A:I";
+const PRODUCT_LIST_DATA_RANGE = "A:J";
 
 const WHOLESALER_SHEET_NAME = "卸先リスト";
 const WHOLESALER_TEST_RANGE = "A1:E20";
@@ -157,13 +157,46 @@ const COUNTRY_PRODUCT_PRICE_COLUMN: Record<
   タイ: { colIndex: 8, currency: "THB" },
 };
 
+export type ProductListingStatus = "掲載" | "非掲載" | "売約済み";
+
 /** API 返却用（原価・他国価格は含めない） */
 export type ProductListItemPublic = {
   id: string;
   name: string;
-  price: string;
-  currency: "HKD" | "CNY" | "THB";
+  price: string | null;
+  currency: "HKD" | "CNY" | "THB" | null;
+  soldOut: boolean;
+  listingStatus: ProductListingStatus;
 };
+
+function parseListingStatus(value: Cell): ProductListingStatus {
+  const raw = cellString(value);
+  if (raw === "非掲載" || raw === "売約済み") {
+    return raw;
+  }
+  return "掲載";
+}
+
+function rowToProductListItem(
+  row: Cell[],
+  mapping: { colIndex: number; currency: "HKD" | "CNY" | "THB" }
+): ProductListItemPublic | null {
+  const id = cellString(row[0]);
+  if (!id) return null;
+
+  const listingStatus = parseListingStatus(row[9]);
+  const name = cellString(row[1]);
+  const soldOut = listingStatus === "売約済み";
+
+  return {
+    id,
+    name,
+    price: soldOut ? null : cellString(row[mapping.colIndex] ?? ""),
+    currency: soldOut ? null : mapping.currency,
+    soldOut,
+    listingStatus,
+  };
+}
 
 /**
  * 「製品リスト」を読み、指定国向けの価格列（G/H/I）だけを返す。1行目はヘッダーとしてスキップ。
@@ -195,18 +228,10 @@ export async function readProductListForCountry(country: string): Promise<Produc
     const row = values[i];
     if (!row) continue;
 
-    const id = cellString(row[0]);
-    if (!id) continue;
+    const item = rowToProductListItem(row, mapping);
+    if (!item || item.listingStatus === "非掲載") continue;
 
-    const name = cellString(row[1]);
-    const price = cellString(row[mapping.colIndex] ?? "");
-
-    items.push({
-      id,
-      name,
-      price,
-      currency: mapping.currency,
-    });
+    items.push(item);
   }
 
   return items;
@@ -247,12 +272,7 @@ export async function readProductByIdForCountry(
     const id = cellString(row[0]);
     if (id !== targetId) continue;
 
-    return {
-      id,
-      name: cellString(row[1]),
-      price: cellString(row[mapping.colIndex] ?? ""),
-      currency: mapping.currency,
-    };
+    return rowToProductListItem(row, mapping);
   }
 
   return null;

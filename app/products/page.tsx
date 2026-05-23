@@ -14,8 +14,10 @@ type MeUser = {
 type ProductRow = {
   id: string;
   name: string;
-  price: string;
-  currency: string;
+  price: string | null;
+  currency: string | null;
+  soldOut: boolean;
+  listingStatus: string;
   thumbnailFileId: string | null;
 };
 
@@ -147,8 +149,14 @@ export default function ProductsPage() {
                       </td>
                       <td className="px-3 py-2 align-top font-mono text-xs">{p.id}</td>
                       <td className="px-3 py-2 align-top">{p.name}</td>
-                      <td className="px-3 py-2 align-top">{p.price}</td>
-                      <td className="px-3 py-2 align-top">{p.currency}</td>
+                      <td className="px-3 py-2 align-top">
+                        {p.soldOut ? (
+                          <span className="font-medium text-red-600">売約済み</span>
+                        ) : (
+                          p.price
+                        )}
+                      </td>
+                      <td className="px-3 py-2 align-top">{p.soldOut ? "" : p.currency}</td>
                       <td className="px-3 py-2 align-top">
                         <Link
                           href={`/products/${encodeURIComponent(p.id)}`}

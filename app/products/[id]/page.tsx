@@ -13,8 +13,10 @@ type MeUser = {
 type ProductDetail = {
   id: string;
   name: string;
-  price: string;
-  currency: string;
+  price: string | null;
+  currency: string | null;
+  soldOut: boolean;
+  listingStatus: string;
   imageFileIds: string[];
 };
 
@@ -136,11 +138,18 @@ export default function ProductDetailPage() {
                 <span className="font-medium">製品名:</span> {data.product.name}
               </p>
               <p>
-                <span className="font-medium">価格:</span> {data.product.price}
+                <span className="font-medium">価格:</span>{" "}
+                {data.product.soldOut ? (
+                  <span className="font-medium text-red-600">売約済み</span>
+                ) : (
+                  data.product.price
+                )}
               </p>
-              <p>
-                <span className="font-medium">通貨:</span> {data.product.currency}
-              </p>
+              {!data.product.soldOut ? (
+                <p>
+                  <span className="font-medium">通貨:</span> {data.product.currency}
+                </p>
+              ) : null}
             </section>
 
             <section className="space-y-3">

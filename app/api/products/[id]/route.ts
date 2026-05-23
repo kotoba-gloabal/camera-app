@@ -29,7 +29,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
 
   try {
     const product = await readProductByIdForCountry(user.country, productId);
-    if (!product) {
+    if (!product || product.listingStatus === "非掲載") {
       return NextResponse.json({ ok: false, error: "Not Found" }, { status: 404 });
     }
 
