@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { LanguageSelector } from "@/components/LanguageSelector";
+import { useLanguage } from "@/components/LanguageProvider";
 
 type MeUser = {
   country: string;
@@ -10,6 +12,7 @@ type MeUser = {
 };
 
 export function Header() {
+  const { t } = useLanguage();
   const [user, setUser] = useState<MeUser | null>(null);
 
   useEffect(() => {
@@ -35,14 +38,14 @@ export function Header() {
       <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
         <div>
           <Link href="/" className="block">
-            <p className="text-lg font-semibold tracking-tight">Used Camera B2B Catalog</p>
+            <p className="text-lg font-semibold tracking-tight">{t("siteTitle")}</p>
             <p className="text-xs font-medium uppercase tracking-widest text-slate-400">
-              Japanese Inspected Cameras
+              {t("siteTagline")}
             </p>
           </Link>
         </div>
 
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-6">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
           {user ? (
             <div className="rounded-lg border border-slate-700 bg-slate-800/60 px-3 py-2 text-xs">
               <p className="font-medium text-slate-200">{user.companyName}</p>
@@ -53,12 +56,14 @@ export function Header() {
             </div>
           ) : null}
 
+          <LanguageSelector />
+
           <nav className="flex flex-wrap items-center gap-4 text-sm font-medium">
             <Link href="/products" className="text-slate-200 transition hover:text-white">
-              Products
+              {t("navProducts")}
             </Link>
             <Link href="/login" className="text-slate-200 transition hover:text-white">
-              Login
+              {t("navLogin")}
             </Link>
           </nav>
         </div>

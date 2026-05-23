@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { useLanguage } from "@/components/LanguageProvider";
 
 type ImageLightboxProps = {
   fileId: string;
@@ -9,6 +10,8 @@ type ImageLightboxProps = {
 };
 
 export function ImageLightbox({ fileId, alt, onClose }: ImageLightboxProps) {
+  const { t } = useLanguage();
+
   useEffect(() => {
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -29,7 +32,7 @@ export function ImageLightbox({ fileId, alt, onClose }: ImageLightboxProps) {
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm"
       role="dialog"
       aria-modal="true"
-      aria-label="Enlarged product image"
+      aria-label={t("enlargeImage")}
       onClick={onClose}
     >
       <div
@@ -40,7 +43,7 @@ export function ImageLightbox({ fileId, alt, onClose }: ImageLightboxProps) {
           type="button"
           className="absolute -right-3 -top-3 z-10 flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-white text-lg font-light text-slate-800 shadow-lg transition hover:bg-slate-50"
           onClick={onClose}
-          aria-label="Close"
+          aria-label={t("closeLightbox")}
         >
           ×
         </button>

@@ -6,6 +6,7 @@ export const metadata: Metadata = {
   description: "B2B used camera catalog",
 };
 
+import { LanguageProvider } from "@/components/LanguageProvider";
 import { SiteShell } from "@/components/SiteShell";
 
 export default function RootLayout({
@@ -14,9 +15,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body>
-        <SiteShell>{children}</SiteShell>
+        <LanguageProvider>
+          <SiteShell>{children}</SiteShell>
+        </LanguageProvider>
       </body>
     </html>
   );

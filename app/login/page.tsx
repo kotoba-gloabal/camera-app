@@ -5,10 +5,12 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
+import { useLanguage } from "@/components/LanguageProvider";
 import { PageContainer } from "@/components/PageContainer";
 
 export default function LoginPage() {
   const router = useRouter();
+  const { t } = useLanguage();
   const [loginId, setLoginId] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -27,13 +29,13 @@ export default function LoginPage() {
       const data: { ok?: boolean; error?: string } = await res.json();
       setPassword("");
       if (!data.ok) {
-        setError(data.error ?? "ログインに失敗しました");
+        setError(data.error ?? t("loginFailed"));
         return;
       }
       setLoginId("");
       router.push("/products");
     } catch {
-      setError("通信に失敗しました");
+      setError(t("networkError"));
     } finally {
       setPending(false);
     }
@@ -45,18 +47,16 @@ export default function LoginPage() {
         <Card>
           <div className="mb-8 text-center">
             <p className="text-xs font-semibold uppercase tracking-[0.15em] text-[#2563EB]">
-              Wholesale Access
+              {t("wholesaleAccess")}
             </p>
-            <h1 className="mt-2 text-2xl font-semibold text-[#111827]">Buyer Login</h1>
-            <p className="mt-2 text-sm leading-relaxed text-[#6B7280]">
-              Access wholesale camera inventory and country-specific pricing.
-            </p>
+            <h1 className="mt-2 text-2xl font-semibold text-[#111827]">{t("buyerLogin")}</h1>
+            <p className="mt-2 text-sm leading-relaxed text-[#6B7280]">{t("loginSubtitle")}</p>
           </div>
 
           <form className="space-y-5" onSubmit={handleSubmit}>
             <div className="space-y-1.5">
               <label htmlFor="loginId" className="text-sm font-medium text-[#111827]">
-                Login ID
+                {t("loginIdLabel")}
               </label>
               <input
                 id="loginId"
@@ -71,7 +71,7 @@ export default function LoginPage() {
             </div>
             <div className="space-y-1.5">
               <label htmlFor="password" className="text-sm font-medium text-[#111827]">
-                Password
+                {t("passwordLabel")}
               </label>
               <input
                 id="password"
@@ -92,13 +92,13 @@ export default function LoginPage() {
             ) : null}
 
             <Button type="submit" variant="secondary" className="w-full" disabled={pending}>
-              {pending ? "Signing in…" : "Sign in"}
+              {pending ? t("signingIn") : t("signIn")}
             </Button>
           </form>
 
           <p className="mt-6 text-center text-sm text-[#6B7280]">
             <Link href="/" className="font-medium text-[#2563EB] hover:underline">
-              Back to home
+              {t("backToHome")}
             </Link>
           </p>
         </Card>

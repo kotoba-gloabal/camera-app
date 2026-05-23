@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { ButtonLink } from "@/components/Button";
 import { Card } from "@/components/Card";
 import { ImageLightbox } from "@/components/ImageLightbox";
+import { useLanguage } from "@/components/LanguageProvider";
 import { PageContainer } from "@/components/PageContainer";
 
 type MeUser = {
@@ -29,6 +30,7 @@ type ProductDetailResponse =
   | { ok: false; error: string };
 
 export default function ProductDetailPage() {
+  const { t } = useLanguage();
   const params = useParams<{ id: string }>();
   const productId = decodeURIComponent(params.id ?? "");
 
@@ -69,12 +71,12 @@ export default function ProductDetailPage() {
           return;
         }
         if (!json.ok) {
-          setError(json.error ?? "読み込みに失敗しました");
+          setError(json.error ?? t("loadFailed"));
           return;
         }
         setData(json);
       } catch {
-        if (!cancelled) setError("通信に失敗しました");
+        if (!cancelled) setError(t("networkError"));
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -91,33 +93,31 @@ export default function ProductDetailPage() {
         href="/products"
         className="inline-flex items-center text-sm font-medium text-[#2563EB] hover:underline"
       >
-        ← Back to products
+        {t("backToProducts")}
       </Link>
 
       {loading ? (
         <Card>
-          <p className="text-sm text-[#6B7280]">Loading product…</p>
+          <p className="text-sm text-[#6B7280]">{t("loadingProduct")}</p>
         </Card>
       ) : null}
 
       {!loading && unauthorized ? (
         <Card className="text-center">
-          <p className="text-[#111827]">Please sign in to view this product.</p>
+          <p className="text-[#111827]">{t("pleaseSignInDetail")}</p>
           <div className="mt-4">
-            <ButtonLink href="/login">Login</ButtonLink>
+            <ButtonLink href="/login">{t("navLogin")}</ButtonLink>
           </div>
         </Card>
       ) : null}
 
       {!loading && notFound ? (
         <Card className="text-center">
-          <p className="font-medium text-[#111827]">Product not found</p>
-          <p className="mt-2 text-sm text-[#6B7280]">
-            This item may be unavailable or no longer listed.
-          </p>
+          <p className="font-medium text-[#111827]">{t("productNotFound")}</p>
+          <p className="mt-2 text-sm text-[#6B7280]">{t("productNotFoundHint")}</p>
           <div className="mt-4">
             <ButtonLink href="/products" variant="outline">
-              Back to inventory
+              {t("backToInventory")}
             </ButtonLink>
           </div>
         </Card>
@@ -144,7 +144,7 @@ export default function ProductDetailPage() {
 
               <div>
                 <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-[#6B7280]">
-                  Product photos
+                  {t("productPhotos")}
                 </h2>
                 {data.product.imageFileIds.length > 0 ? (
                   <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
@@ -154,7 +154,7 @@ export default function ProductDetailPage() {
                         type="button"
                         className="group overflow-hidden rounded-xl border border-gray-200 bg-white p-2 shadow-sm transition hover:border-blue-200 hover:shadow-md"
                         onClick={() => setSelectedImageFileId(fileId)}
-                        aria-label={`Enlarge ${data.product.name}`}
+                        aria-label={t("enlargeImage")}
                       >
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
@@ -168,7 +168,7 @@ export default function ProductDetailPage() {
                   </div>
                 ) : (
                   <Card>
-                    <p className="text-sm text-[#6B7280]">No images available for this product.</p>
+                    <p className="text-sm text-[#6B7280]">{t("noImagesAvailable")}</p>
                   </Card>
                 )}
               </div>
@@ -177,10 +177,10 @@ export default function ProductDetailPage() {
             <aside className="space-y-4 lg:sticky lg:top-8">
               <Card>
                 <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">
-                  Pricing
+                  {t("pricingLabel")}
                 </p>
                 {data.product.soldOut ? (
-                  <p className="mt-3 text-2xl font-bold text-[#DC2626]">売約済み</p>
+                  <p className="mt-3 text-2xl font-bold text-[#DC2626]">{t("soldOut")}</p>
                 ) : (
                   <div className="mt-3">
                     <p className="text-3xl font-bold tracking-tight text-[#111827]">
@@ -195,7 +195,7 @@ export default function ProductDetailPage() {
 
               <Card className="text-sm">
                 <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">
-                  Buyer
+                  {t("buyerLabel")}
                 </p>
                 <p className="mt-2 font-medium text-[#111827]">{data.user.companyName}</p>
                 <p className="text-[#6B7280]">{data.user.country}</p>
