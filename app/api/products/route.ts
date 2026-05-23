@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { SESSION_COOKIE_NAME, verifySessionToken } from "@/lib/auth";
 import { createDriveLookupCache, getPreferredThumbnailFileId } from "@/lib/drive";
+import {
+  applyProductQuery,
+  parseQueryParam,
+  parseSoldStatusParam,
+  parseSortByParam,
+  parseSortOrderParam,
+} from "@/lib/products-query";
 import { readProductListForCountry } from "@/lib/sheets";
 
 export const runtime = "nodejs";
@@ -37,16 +44,27 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   }
 
-  const page = parsePageParam(request.nextUrl.searchParams.get("page"));
-  const pageSize = parsePageSizeParam(request.nextUrl.searchParams.get("pageSize"));
+  const searchParams = request.nextUrl.searchParams;
+  const page = parsePageParam(searchParams.get("page"));
+  const pageSize = parsePageSizeParam(searchParams.get("pageSize"));
+  const filters = {
+    q: parseQueryParam(searchParams.get("q")),
+    soldStatus: parseSoldStatusParam(searchParams.get("soldStatus")),
+  };
+  const sort = {
+    sortBy: parseSortByParam(searchParams.get("sortBy")),
+    sortOrder: parseSortOrderParam(searchParams.get("sortOrder")),
+  };
 
   try {
     const allProducts = await readProductListForCountry(user.country);
-    const totalItems = allProducts.length;
+    const filteredProducts = applyProductQuery(allProducts, filters, sort);
+
+    const totalItems = filteredProducts.length;
     const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
     const currentPage = Math.min(Math.max(page, 1), totalPages);
     const start = (currentPage - 1) * pageSize;
-    const pageProducts = allProducts.slice(start, start + pageSize);
+    const pageProducts = filteredProducts.slice(start, start + pageSize);
 
     const cache = createDriveLookupCache();
     const productsWithThumbnails = await Promise.all(
@@ -71,6 +89,8 @@ export async function GET(request: NextRequest) {
         hasPrev: currentPage > 1,
         hasNext: currentPage < totalPages,
       },
+      filters,
+      sort,
       products: productsWithThumbnails,
     });
   } catch (err) {
