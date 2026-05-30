@@ -143,8 +143,6 @@ export default function ProductDetailPage() {
                 </h1>
               </div>
 
-              <ProductInspectionTable />
-
               <div>
                 <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-[#6B7280]">
                   {t("productPhotos")}
@@ -175,6 +173,8 @@ export default function ProductDetailPage() {
                   </Card>
                 )}
               </div>
+
+              <ProductInspectionTable />
             </section>
 
             <aside className="space-y-4 lg:sticky lg:top-8">
