@@ -8,6 +8,7 @@ import { Card } from "@/components/Card";
 import { ImageLightbox } from "@/components/ImageLightbox";
 import { useLanguage } from "@/components/LanguageProvider";
 import { PageContainer } from "@/components/PageContainer";
+import { ProductInspectionTable } from "@/components/ProductInspectionTable";
 
 type MeUser = {
   country: string;
@@ -141,6 +142,8 @@ export default function ProductDetailPage() {
                   {data.product.name}
                 </h1>
               </div>
+
+              <ProductInspectionTable />
 
               <div>
                 <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-[#6B7280]">
