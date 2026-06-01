@@ -96,6 +96,20 @@ export type MessageKey =
   | "closeLightbox"
   | "loadFailed"
   | "viewProductPhoto"
+  | "inspectionTitle"
+  | "inspectionSubtitle"
+  | "inspectionItem"
+  | "inspectionResult"
+  | "inspectionLens"
+  | "inspectionLCD"
+  | "inspectionPower"
+  | "inspectionShutter"
+  | "inspectionFlash"
+  | "inspectionZoom"
+  | "inspectionButtons"
+  | "inspectionLensRetraction"
+  | "inspectionAccessories"
+  | "inspectionPassed"
   | "inspectionNoAccessories";
 
 export type Messages = Record<MessageKey, string>;
@@ -173,6 +187,20 @@ const en: Messages = {
   closeLightbox: "Close",
   loadFailed: "Failed to load data.",
   viewProductPhoto: "View product details",
+  inspectionTitle: "Operational Check",
+  inspectionSubtitle: "Basic functional inspection before listing.",
+  inspectionItem: "Check Item",
+  inspectionResult: "Result",
+  inspectionLens: "Lens",
+  inspectionLCD: "LCD Screen",
+  inspectionPower: "Power",
+  inspectionShutter: "Shutter",
+  inspectionFlash: "Flash",
+  inspectionZoom: "Zoom",
+  inspectionButtons: "Button Response",
+  inspectionLensRetraction: "Lens Retraction",
+  inspectionAccessories: "Accessories",
+  inspectionPassed: "OK",
   inspectionNoAccessories: "-",
 };
 
@@ -246,6 +274,21 @@ const ja: Messages = {
   closeLightbox: "閉じる",
   loadFailed: "データの読み込みに失敗しました。",
   viewProductPhoto: "商品詳細を見る",
+  inspectionTitle: "動作確認",
+  inspectionSubtitle: "掲載前の基本動作確認",
+  inspectionItem: "確認項目",
+  inspectionResult: "結果",
+  inspectionLens: "レンズ",
+  inspectionLCD: "液晶",
+  inspectionPower: "電源",
+  inspectionShutter: "シャッター",
+  inspectionFlash: "フラッシュ",
+  inspectionZoom: "ズーム",
+  inspectionButtons: "ボタン反応",
+  inspectionLensRetraction: "レンズ格納",
+  inspectionAccessories: "付属品",
+  inspectionPassed: "〇",
+  inspectionNoAccessories: "-",
 };
 
 const zhCN: Messages = {
@@ -298,6 +341,21 @@ const zhCN: Messages = {
   productNotFound: "未找到产品",
   productNotFoundHint: "该产品可能已下架或不存在。",
   viewProductPhoto: "查看产品详情",
+  inspectionTitle: "功能检查",
+  inspectionSubtitle: "上架前的基本功能检查",
+  inspectionItem: "检查项目",
+  inspectionResult: "结果",
+  inspectionLens: "镜头",
+  inspectionLCD: "液晶屏",
+  inspectionPower: "电源",
+  inspectionShutter: "快门",
+  inspectionFlash: "闪光灯",
+  inspectionZoom: "变焦",
+  inspectionButtons: "按键反应",
+  inspectionLensRetraction: "镜头收纳",
+  inspectionAccessories: "配件",
+  inspectionPassed: "〇",
+  inspectionNoAccessories: "-",
 };
 
 const zhTW: Messages = {
@@ -332,6 +390,21 @@ const zhTW: Messages = {
   next: "下一頁",
   backToProducts: "← 返回產品列表",
   productNotFound: "找不到產品",
+  inspectionTitle: "功能檢查",
+  inspectionSubtitle: "上架前的基本功能檢查",
+  inspectionItem: "檢查項目",
+  inspectionResult: "結果",
+  inspectionLens: "鏡頭",
+  inspectionLCD: "液晶螢幕",
+  inspectionPower: "電源",
+  inspectionShutter: "快門",
+  inspectionFlash: "閃光燈",
+  inspectionZoom: "變焦",
+  inspectionButtons: "按鍵反應",
+  inspectionLensRetraction: "鏡頭收納",
+  inspectionAccessories: "配件",
+  inspectionPassed: "〇",
+  inspectionNoAccessories: "-",
 };
 
 const th: Messages = {
@@ -361,6 +434,21 @@ const th: Messages = {
   backToProducts: "← กลับไปรายการสินค้า",
   noMatchingProducts: "ไม่พบสินค้าที่ตรงกัน",
   viewProductPhoto: "ดูรายละเอียดสินค้า",
+  inspectionTitle: "การตรวจสอบการทำงาน",
+  inspectionSubtitle: "การตรวจสอบฟังก์ชันพื้นฐานก่อนลงรายการ",
+  inspectionItem: "รายการตรวจสอบ",
+  inspectionResult: "ผลลัพธ์",
+  inspectionLens: "เลนส์",
+  inspectionLCD: "หน้าจอ LCD",
+  inspectionPower: "การเปิดเครื่อง",
+  inspectionShutter: "ชัตเตอร์",
+  inspectionFlash: "แฟลช",
+  inspectionZoom: "ซูม",
+  inspectionButtons: "การตอบสนองของปุ่ม",
+  inspectionLensRetraction: "การเก็บเลนส์",
+  inspectionAccessories: "อุปกรณ์เสริม",
+  inspectionPassed: "OK",
+  inspectionNoAccessories: "-",
 };
 
 const es: Messages = {
@@ -391,6 +479,21 @@ const es: Messages = {
   backToProducts: "← Volver a productos",
   noMatchingProducts: "No hay productos coincidentes",
   viewProductPhoto: "Ver detalles del producto",
+  inspectionTitle: "Comprobación funcional",
+  inspectionSubtitle: "Inspección funcional básica antes de la publicación.",
+  inspectionItem: "Elemento",
+  inspectionResult: "Resultado",
+  inspectionLens: "Lente",
+  inspectionLCD: "Pantalla LCD",
+  inspectionPower: "Encendido",
+  inspectionShutter: "Obturador",
+  inspectionFlash: "Flash",
+  inspectionZoom: "Zoom",
+  inspectionButtons: "Respuesta de botones",
+  inspectionLensRetraction: "Retracción de lente",
+  inspectionAccessories: "Accesorios",
+  inspectionPassed: "OK",
+  inspectionNoAccessories: "-",
 };
 
 const ko: Messages = {
@@ -420,6 +523,21 @@ const ko: Messages = {
   backToProducts: "← 제품 목록으로",
   noMatchingProducts: "일치하는 제품이 없습니다",
   viewProductPhoto: "제품 상세 보기",
+  inspectionTitle: "작동 확인",
+  inspectionSubtitle: "등록 전 기본 기능 점검",
+  inspectionItem: "확인 항목",
+  inspectionResult: "결과",
+  inspectionLens: "렌즈",
+  inspectionLCD: "LCD 화면",
+  inspectionPower: "전원",
+  inspectionShutter: "셔터",
+  inspectionFlash: "플래시",
+  inspectionZoom: "줌",
+  inspectionButtons: "버튼 반응",
+  inspectionLensRetraction: "렌즈 수납",
+  inspectionAccessories: "부속품",
+  inspectionPassed: "OK",
+  inspectionNoAccessories: "-",
 };
 
 const ms: Messages = {
@@ -450,6 +568,21 @@ const ms: Messages = {
   backToProducts: "← Kembali ke produk",
   noMatchingProducts: "Tiada produk sepadan",
   viewProductPhoto: "Lihat butiran produk",
+  inspectionTitle: "Pemeriksaan Fungsi",
+  inspectionSubtitle: "Pemeriksaan fungsi asas sebelum disenaraikan.",
+  inspectionItem: "Item Pemeriksaan",
+  inspectionResult: "Keputusan",
+  inspectionLens: "Lensa",
+  inspectionLCD: "Skrin LCD",
+  inspectionPower: "Kuasa",
+  inspectionShutter: "Shutter",
+  inspectionFlash: "Flash",
+  inspectionZoom: "Zum",
+  inspectionButtons: "Respons Butang",
+  inspectionLensRetraction: "Penarikan Lensa",
+  inspectionAccessories: "Aksesori",
+  inspectionPassed: "OK",
+  inspectionNoAccessories: "-",
 };
 
 export const messages: Record<Locale, Messages> = {
