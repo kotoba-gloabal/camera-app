@@ -1,3 +1,8 @@
+"use client";
+
+import { useLanguage } from "@/components/LanguageProvider";
+import { translateAccessories } from "@/lib/i18n";
+
 const INSPECTION_ITEMS = [
   "レンズ",
   "液晶",
@@ -14,7 +19,9 @@ type ProductInspectionTableProps = {
 };
 
 export function ProductInspectionTable({ accessories }: ProductInspectionTableProps) {
-  const accessoriesText = accessories?.trim() ? accessories.trim() : "-";
+  const { locale, t } = useLanguage();
+  const translated = translateAccessories(accessories, locale);
+  const accessoriesText = translated ?? t("inspectionNoAccessories");
 
   return (
     <div className="rounded-2xl border border-gray-200/80 bg-white p-5 shadow-sm sm:p-6">

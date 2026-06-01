@@ -95,7 +95,8 @@ export type MessageKey =
   | "enlargeImage"
   | "closeLightbox"
   | "loadFailed"
-  | "viewProductPhoto";
+  | "viewProductPhoto"
+  | "inspectionNoAccessories";
 
 export type Messages = Record<MessageKey, string>;
 
@@ -172,6 +173,7 @@ const en: Messages = {
   closeLightbox: "Close",
   loadFailed: "Failed to load data.",
   viewProductPhoto: "View product details",
+  inspectionNoAccessories: "-",
 };
 
 const ja: Messages = {
@@ -478,4 +480,109 @@ export function translate(locale: Locale, key: MessageKey, vars?: Record<string,
   const fallback = messages.en[key];
   const template = table[key] ?? fallback;
   return formatMessage(template, vars);
+}
+
+/** 既知の付属品パターン（日本語の正規化済みキー） */
+type AccessoryKey =
+  | "バッテリー"
+  | "本体のみ（乾電池式）"
+  | "本体のみ"
+  | "充電器"
+  | "バッテリー、充電器";
+
+const ACCESSORIES_MAP: Record<Locale, Record<AccessoryKey, string>> = {
+  ja: {
+    バッテリー: "バッテリー",
+    "本体のみ（乾電池式）": "本体のみ（乾電池式）",
+    本体のみ: "本体のみ",
+    充電器: "充電器",
+    "バッテリー、充電器": "バッテリー、充電器",
+  },
+  en: {
+    バッテリー: "Battery",
+    "本体のみ（乾電池式）": "Body only (AA battery type)",
+    本体のみ: "Body only",
+    充電器: "Charger",
+    "バッテリー、充電器": "Battery, charger",
+  },
+  "zh-CN": {
+    バッテリー: "电池",
+    "本体のみ（乾電池式）": "仅机身（干电池式）",
+    本体のみ: "仅机身",
+    充電器: "充电器",
+    "バッテリー、充電器": "电池、充电器",
+  },
+  "zh-TW": {
+    バッテリー: "電池",
+    "本体のみ（乾電池式）": "僅機身（乾電池式）",
+    本体のみ: "僅機身",
+    充電器: "充電器",
+    "バッテリー、充電器": "電池、充電器",
+  },
+  th: {
+    バッテリー: "แบตเตอรี่",
+    "本体のみ（乾電池式）": "เฉพาะตัวเครื่อง (ใช้ถ่าน AA)",
+    本体のみ: "เฉพาะตัวเครื่อง",
+    充電器: "ที่ชาร์จ",
+    "バッテリー、充電器": "แบตเตอรี่, ที่ชาร์จ",
+  },
+  es: {
+    バッテリー: "Batería",
+    "本体のみ（乾電池式）": "Solo cuerpo (tipo pilas AA)",
+    本体のみ: "Solo cuerpo",
+    充電器: "Cargador",
+    "バッテリー、充電器": "Batería, cargador",
+  },
+  ko: {
+    バッテリー: "배터리",
+    "本体のみ（乾電池式）": "본체만 (건전지식)",
+    本体のみ: "본체만",
+    充電器: "충전기",
+    "バッテリー、充電器": "배터리, 충전기",
+  },
+  ms: {
+    バッテリー: "Bateri",
+    "本体のみ（乾電池式）": "Badan sahaja (jenis bateri AA)",
+    本体のみ: "Badan sahaja",
+    充電器: "Pengecas",
+    "バッテリー、充電器": "Bateri, pengecas",
+  },
+};
+
+const ACCESSORY_KEYS = new Set<string>([
+  "バッテリー",
+  "本体のみ（乾電池式）",
+  "本体のみ",
+  "充電器",
+  "バッテリー、充電器",
+]);
+
+/** カンマ・読点・前後空白の表記揺れを正規化する */
+function normalizeAccessoriesKey(value: string): string {
+  return value
+    .trim()
+    .replace(/[、,，]\s*/g, "、");
+}
+
+/**
+ * 付属品テキストを選択言語に翻訳する。
+ * - 空欄: null を返す（呼び出し側で "-" 等を表示）
+ * - 既知パターン: 翻訳して返す
+ * - 未知の値: 元のテキストをそのまま返す
+ */
+export function translateAccessories(
+  accessories: string | null | undefined,
+  locale: Locale
+): string | null {
+  if (!accessories || !accessories.trim()) {
+    return null;
+  }
+
+  const normalized = normalizeAccessoriesKey(accessories);
+  if (ACCESSORY_KEYS.has(normalized)) {
+    const table = ACCESSORIES_MAP[locale] ?? ACCESSORIES_MAP.en;
+    return table[normalized as AccessoryKey];
+  }
+
+  return accessories.trim();
 }
