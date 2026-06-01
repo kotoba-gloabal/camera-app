@@ -9,7 +9,13 @@ const INSPECTION_ITEMS = [
   "レンズ格納",
 ] as const;
 
-export function ProductInspectionTable() {
+type ProductInspectionTableProps = {
+  accessories?: string;
+};
+
+export function ProductInspectionTable({ accessories }: ProductInspectionTableProps) {
+  const accessoriesText = accessories?.trim() ? accessories.trim() : "-";
+
   return (
     <div className="rounded-2xl border border-gray-200/80 bg-white p-5 shadow-sm sm:p-6">
       <h2 className="text-base font-semibold text-[#111827]">動作確認</h2>
@@ -32,6 +38,12 @@ export function ProductInspectionTable() {
                 </td>
               </tr>
             ))}
+            <tr className="border-t border-gray-100">
+              <td className="px-4 py-2.5 align-top text-[#111827]">付属品</td>
+              <td className="whitespace-pre-wrap break-words px-4 py-2.5 text-right text-gray-700">
+                {accessoriesText}
+              </td>
+            </tr>
           </tbody>
         </table>
       </div>

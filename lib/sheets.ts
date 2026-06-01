@@ -3,6 +3,7 @@ import { createSheetsClient } from "@/lib/google";
 const PRODUCT_SHEET_NAME = "製品リスト";
 const TEST_RANGE = "A1:J5";
 const PRODUCT_LIST_DATA_RANGE = "A:J";
+const PRODUCT_DETAIL_DATA_RANGE = "A:K";
 
 const WHOLESALER_SHEET_NAME = "卸先リスト";
 const WHOLESALER_TEST_RANGE = "A1:E20";
@@ -169,6 +170,11 @@ export type ProductListItemPublic = {
   listingStatus: ProductListingStatus;
 };
 
+/** 商品詳細用（付属品 K列 を含む） */
+export type ProductDetailPublic = ProductListItemPublic & {
+  accessories: string;
+};
+
 function parseListingStatus(value: Cell): ProductListingStatus {
   const raw = cellString(value);
   if (raw === "非掲載" || raw === "売約済み") {
@@ -243,7 +249,7 @@ export async function readProductListForCountry(country: string): Promise<Produc
 export async function readProductByIdForCountry(
   country: string,
   productId: string
-): Promise<ProductListItemPublic | null> {
+): Promise<ProductDetailPublic | null> {
   const mapping = COUNTRY_PRODUCT_PRICE_COLUMN[country];
   if (!mapping) {
     throw new Error("Unsupported country for product list");
@@ -255,7 +261,7 @@ export async function readProductByIdForCountry(
   }
 
   const sheets = createSheetsClient();
-  const range = `'${PRODUCT_SHEET_NAME.replace(/'/g, "''")}'!${PRODUCT_LIST_DATA_RANGE}`;
+  const range = `'${PRODUCT_SHEET_NAME.replace(/'/g, "''")}'!${PRODUCT_DETAIL_DATA_RANGE}`;
 
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId,
@@ -272,7 +278,13 @@ export async function readProductByIdForCountry(
     const id = cellString(row[0]);
     if (id !== targetId) continue;
 
-    return rowToProductListItem(row, mapping);
+    const item = rowToProductListItem(row, mapping);
+    if (!item) return null;
+
+    return {
+      ...item,
+      accessories: cellString(row[10]),
+    };
   }
 
   return null;

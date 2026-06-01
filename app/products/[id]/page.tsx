@@ -23,6 +23,7 @@ type ProductDetail = {
   currency: string | null;
   soldOut: boolean;
   listingStatus: string;
+  accessories: string;
   imageFileIds: string[];
 };
 
@@ -174,7 +175,7 @@ export default function ProductDetailPage() {
                 )}
               </div>
 
-              <ProductInspectionTable />
+              <ProductInspectionTable accessories={data.product.accessories} />
             </section>
 
             <aside className="space-y-4 lg:sticky lg:top-8">
