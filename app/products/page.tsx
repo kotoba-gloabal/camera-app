@@ -23,6 +23,7 @@ type ProductRow = {
   name: string;
   price: string | null;
   currency: string | null;
+  hidePrice: boolean;
   soldOut: boolean;
   listingStatus: string;
   thumbnailFileId: string | null;
@@ -336,7 +337,7 @@ export default function ProductsPage() {
                         <span className="inline-flex rounded-full bg-red-50 px-2.5 py-1 text-xs font-semibold text-[#DC2626] ring-1 ring-red-200">
                           {t("soldOut")}
                         </span>
-                      ) : (
+                      ) : p.hidePrice ? null : (
                         <p className="text-lg font-semibold text-[#111827]">
                           {p.price}{" "}
                           <span className="text-sm font-medium text-[#6B7280]">{p.currency}</span>

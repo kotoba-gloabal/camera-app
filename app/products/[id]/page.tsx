@@ -21,6 +21,7 @@ type ProductDetail = {
   name: string;
   price: string | null;
   currency: string | null;
+  hidePrice: boolean;
   soldOut: boolean;
   listingStatus: string;
   accessories: string;
@@ -179,23 +180,25 @@ export default function ProductDetailPage() {
             </section>
 
             <aside className="space-y-4 lg:sticky lg:top-8">
-              <Card>
-                <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">
-                  {t("pricingLabel")}
-                </p>
-                {data.product.soldOut ? (
-                  <p className="mt-3 text-2xl font-bold text-[#DC2626]">{t("soldOut")}</p>
-                ) : (
-                  <div className="mt-3">
-                    <p className="text-3xl font-bold tracking-tight text-[#111827]">
-                      {data.product.price}
-                    </p>
-                    <p className="mt-1 text-sm font-medium text-[#6B7280]">
-                      {data.product.currency}
-                    </p>
-                  </div>
-                )}
-              </Card>
+              {data.product.soldOut || !data.product.hidePrice ? (
+                <Card>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">
+                    {t("pricingLabel")}
+                  </p>
+                  {data.product.soldOut ? (
+                    <p className="mt-3 text-2xl font-bold text-[#DC2626]">{t("soldOut")}</p>
+                  ) : (
+                    <div className="mt-3">
+                      <p className="text-3xl font-bold tracking-tight text-[#111827]">
+                        {data.product.price}
+                      </p>
+                      <p className="mt-1 text-sm font-medium text-[#6B7280]">
+                        {data.product.currency}
+                      </p>
+                    </div>
+                  )}
+                </Card>
+              ) : null}
 
               <Card className="text-sm">
                 <p className="text-xs font-semibold uppercase tracking-wide text-[#6B7280]">

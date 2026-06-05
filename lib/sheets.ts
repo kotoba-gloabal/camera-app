@@ -25,7 +25,8 @@ function cellExactString(value: Cell): string {
   return String(value);
 }
 
-const ALLOWED_LOGIN_COUNTRIES = new Set(["香港", "中国", "タイ"]);
+const NO_PRICE_COUNTRY = "価格なし";
+const ALLOWED_LOGIN_COUNTRIES = new Set(["香港", "中国", "タイ", NO_PRICE_COUNTRY]);
 
 export type WholesalerTestRow = {
   country: string;
@@ -166,9 +167,24 @@ export type ProductListItemPublic = {
   name: string;
   price: string | null;
   currency: "HKD" | "CNY" | "THB" | null;
+  hidePrice: boolean;
   soldOut: boolean;
   listingStatus: ProductListingStatus;
 };
+
+type PriceMapping = { colIndex: number; currency: "HKD" | "CNY" | "THB" };
+
+/** 国に応じた価格列マッピングを返す。価格なしユーザーは null。許可外はエラー。 */
+function resolvePriceMapping(country: string): PriceMapping | null {
+  if (country === NO_PRICE_COUNTRY) {
+    return null;
+  }
+  const mapping = COUNTRY_PRODUCT_PRICE_COLUMN[country];
+  if (!mapping) {
+    throw new Error("Unsupported country for product list");
+  }
+  return mapping;
+}
 
 /** 商品詳細用（付属品 K列 を含む） */
 export type ProductDetailPublic = ProductListItemPublic & {
@@ -185,7 +201,7 @@ function parseListingStatus(value: Cell): ProductListingStatus {
 
 function rowToProductListItem(
   row: Cell[],
-  mapping: { colIndex: number; currency: "HKD" | "CNY" | "THB" }
+  mapping: PriceMapping | null
 ): ProductListItemPublic | null {
   const id = cellString(row[0]);
   if (!id) return null;
@@ -193,12 +209,15 @@ function rowToProductListItem(
   const listingStatus = parseListingStatus(row[9]);
   const name = cellString(row[1]);
   const soldOut = listingStatus === "売約済み";
+  const hidePrice = mapping === null;
+  const showPrice = !soldOut && !hidePrice && mapping !== null;
 
   return {
     id,
     name,
-    price: soldOut ? null : cellString(row[mapping.colIndex] ?? ""),
-    currency: soldOut ? null : mapping.currency,
+    price: showPrice ? cellString(row[mapping.colIndex] ?? "") : null,
+    currency: showPrice ? mapping.currency : null,
+    hidePrice,
     soldOut,
     listingStatus,
   };
@@ -209,10 +228,7 @@ function rowToProductListItem(
  * C〜F列（原価・他地域の日本円価格など）はレスポンスに含めない。
  */
 export async function readProductListForCountry(country: string): Promise<ProductListItemPublic[]> {
-  const mapping = COUNTRY_PRODUCT_PRICE_COLUMN[country];
-  if (!mapping) {
-    throw new Error("Unsupported country for product list");
-  }
+  const mapping = resolvePriceMapping(country);
 
   const spreadsheetId = process.env.GOOGLE_SHEET_ID;
   if (!spreadsheetId) {
@@ -250,10 +266,7 @@ export async function readProductByIdForCountry(
   country: string,
   productId: string
 ): Promise<ProductDetailPublic | null> {
-  const mapping = COUNTRY_PRODUCT_PRICE_COLUMN[country];
-  if (!mapping) {
-    throw new Error("Unsupported country for product list");
-  }
+  const mapping = resolvePriceMapping(country);
 
   const spreadsheetId = process.env.GOOGLE_SHEET_ID;
   if (!spreadsheetId) {
